@@ -2,7 +2,6 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.*;
-import java.util.Arrays;
 import java.util.Scanner;
 
 public class Client{
@@ -22,7 +21,7 @@ public class Client{
 		help.print("Initialized");
 	}
 	
-	@SuppressWarnings("resource")
+	@SuppressWarnings({ "resource"})
 	public void begin(){
 		int request;
 		//Get the request from the user.
@@ -92,7 +91,7 @@ public class Client{
 		}
 		else{
 			//Write Request;
-			help.print("Please enter the name of the file you want to write to on the server:");
+			help.print("Please enter the save location on the server:");
 			String saveFile = new Scanner(System.in).nextLine();
 			String sendFile;
 			//Get the file to save data to.
@@ -112,14 +111,18 @@ public class Client{
 			} catch (IOException e) { e.printStackTrace(); }
 			
 			//Send the request;
-			Packet req = new Packet(1, sendFile, "netascii");
+			Packet req = new Packet(2, saveFile, "netascii");
 			Packet rec = help.sendReceive(req, soc, serverAddress, Port);
 			if(rec.GetRequest()==4){ }
 			else{System.exit(1);}
-			
-			//Ready for file transfer;
+
 			help.print("Request Success, sending "+numBlock+" blocks.");
-			while(curBlock < numBlock){
+			//Ready for file transfer;
+			req = new Packet(numBlock);
+			rec = help.sendReceive(req, soc, serverAddress, Port);
+			if(rec.GetRequest()==4){ }
+			else{System.exit(1);}
+			while(curBlock <= numBlock){
 				byte[] bData = help.ReadData(FIn, curBlock, Packet.DATASIZE);
 				Packet ack = new Packet(curBlock,bData);
 				rec = help.sendReceive(ack, soc, serverAddress, Port);
@@ -132,7 +135,7 @@ public class Client{
 	}
 	public static void main(String[] args){
 		try {
-			Client c = new Client(69, InetAddress.getLocalHost(),new java.io.File( "." ).getCanonicalPath() + "\\",true);
+			Client c = new Client(23, InetAddress.getLocalHost(),new java.io.File( "." ).getCanonicalPath() + "\\",true);
 			c.begin();
 		} catch (Exception e) { e.printStackTrace(); }
 		

@@ -24,7 +24,7 @@ public class Packet {
 	public int    GetPacketN() { return pNum;    }
 	public int    GetErrCode() { return ErrCode; }
 	public String GetErrMSG () { return ErrMSG;  }
-	public String GetFil    () { return File;    }
+	public String GetFile   () { return File;    }
 	public String GetMode   () { return Mode;    }
 	
 	//Constructors-----------------------------------------------------------------------//
@@ -122,7 +122,9 @@ public class Packet {
 		}
 		if(Req==3){
 			i = offsetByteCopy(out,i2b(pNum,BLOCKNUMBYTESIZE),i);
-			i = offsetByteCopy(out,bData,i);
+			for(int j = 0; j<bData.length;j++){
+				out[i++]=bData[j];
+			}
 		}
 		if(Req==4){
 			i = offsetByteCopy(out,i2b(pNum,BLOCKNUMBYTESIZE),i);
@@ -132,7 +134,6 @@ public class Packet {
 			i = offsetByteCopy(out, ErrMSG.getBytes(),i);
 			out[i++] = 0;
 		}
-		while(i<PACKETSIZE) out[i++] = 0;
 		return out;
 	}
 	

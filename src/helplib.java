@@ -43,11 +43,7 @@ public class helplib {
 	public byte[] ReadData(FileInputStream fIn, int block, int size){
 		try { 
 			long fileSize = fIn.getChannel().size();
-			int curSize = fileSize>((long)(block+1)*(long)size)?
-					size
-					:(int)(fileSize-(long)block*(long)size);
-			fIn.skip((long)block*(long)size);
-			byte[] out = new byte[curSize];
+			byte[] out = new byte[size];
 			fIn.read(out);
 			return out;
 		} catch (IOException e) { e.printStackTrace(); }
@@ -56,7 +52,19 @@ public class helplib {
 	
 	//Write bytes to end of file.
 	public void WriteData(FileOutputStream fOut, byte[] block){
-		try { fOut.write(block);
+		int i = 0;
+		byte[] write = null;
+		for(i = 0; i<block.length; i++){
+			if(block[i]==0){ 
+				write = new byte[i];
+				for(int j = 0; j<i; j++){
+					write[j] = block[j];
+				}
+				break;
+			}
+		}
+		if(i>=block.length) write = block;
+		try { fOut.write(write);
 		} catch (IOException e) {e.printStackTrace(); }
 	}
 	
