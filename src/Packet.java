@@ -65,13 +65,13 @@ public class Packet {
 	public String toString() {
 		String r = Req2Str() + ":: ";
 		if(Req==1||Req==2)
-			r = "FILE: '" + File + "' |MODE: '" + Mode+"'";
+			r += "FILE: '" + File + "' | MODE: '" + Mode+"'";
 		else if(Req==3)
-			r = "BLOCK: " + pNum + "|CONTAINING: " + Arrays.toString(bData);
+			r += "BLOCK: " + pNum + "| CONTAINING: " + Arrays.toString(bData);
 		else if(Req==4)
-			r = "BLOCK: " + pNum;
+			r += "BLOCK: " + pNum;
 		else if(Req==5)
-			r = ErrCode + " : " + ErrMSG;
+			r += ErrCode + " : " + ErrMSG;
 		return r;
 	}
 	
@@ -164,17 +164,24 @@ public class Packet {
 			output[i] = input[start + i];
 		return new String(output);
 	}
-	private int    b2i(byte[] b){ 
-		int result = 0;
-		for(int i = 0; i <b.length;i++){
-			result += Math.pow(128, b.length - i - 1) * b[i];
+	
+	//Converts bytes to integer;
+	private int b2i(byte[] b){ 
+		byte[] bytes = new byte[4];
+		for(int i = 0; (i<4 && i<b.length);i++){
+			bytes[3-i] = b[b.length-1-i];
 		}
-		return result;
+		ByteBuffer wrapped = ByteBuffer.wrap(bytes);
+		return wrapped.getInt();
 	}
+	//Converts integer to bytes;
 	private byte[] i2b(int integer,int size)   { 
+		ByteBuffer dbuf = ByteBuffer.allocate(4);
+		dbuf.putInt(integer);
+		byte[] bytes = dbuf.array();
 		byte[] result = new byte[size];
-		for(int i = 0; i <size;i++){
-			
+		for(int i = 0; (i<4 && i<size);i++){
+			result[size-i-1] = bytes[3-i];
 		}
 		return result;
 	}

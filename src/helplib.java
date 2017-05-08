@@ -62,13 +62,13 @@ public class helplib {
 	
 	//Custom Print statement that adds the class name with it;
 	public void print(String Message){
-		System.out.println(name+":: "+Message);
+		System.out.println(name+"::: "+Message);
 	}
 	
 	//Custom Print that doesn't get printed unless stated otherwise;
 	public void printd(String Message){
 		if(verbose){
-			System.out.println(name+":D::"+Message);
+			System.out.println(name+":D: "+Message);
 		}
 		
 	}
