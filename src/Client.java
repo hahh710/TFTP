@@ -1,3 +1,13 @@
+/**
+ * Client for a TFTP
+ *
+ *Iteration 1:
+ * Client asks user to make R/W request.
+ * Request sent to server at port 23 and receives response.
+ * Performs file operation.
+ * Little to no error checking done for now.
+ *      
+ */
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -15,8 +25,8 @@ public class Client{
 		help = new helplib("Client", verbose);
 		try{ soc = new DatagramSocket(); } 
 		catch(SocketException se){ help.print("Failed to create Socket."); System.exit(1); }
-		workingDir		= dir;
-		Port 			= port;
+		workingDir	= dir;
+		Port 		= port;
 		serverAddress 	= addr;
 		help.print("Initialized");
 	}
