@@ -6,6 +6,15 @@ Rami Daham             100995251 - Reports and Documentation
 Vishahan Thilagakumar  100994856 - Server
 Kariharan Thiagakumar  100922048 - Client
 
+Documentation Files Included:
+ -README - "README.md"
+ -UML    - "UML.jpeg"
+ -UCM    - "FileTransfer.pdf"
+ 
+ Test Files for file transfer are:
+ -"test"
+ 
+ 
 =====================================================================
 File Transfer Protocol
 Sending File format from the Client to the intermediate and finally 
