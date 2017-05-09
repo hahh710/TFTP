@@ -1,7 +1,13 @@
+/**
+ * Packet Object to avoid manually working with packets.
+ *
+ *Iteration Exclusive:
+ * Built to be compatible with future iterations with minimal changes.
+ *      
+ */
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 
-//Packet Object class to avoid manually working with packets.
 public class Packet {
 	//Public packet MetaData Variables to allow for the max packets to easily be edited.
 	public static int PACKETSIZE       = 512;
@@ -55,10 +61,12 @@ public class Packet {
 		ErrMSG  = m;
 	}
 	
+	//Converts a byte array to a Packet;
 	public Packet(byte[] data){
 		byteParseFill(data);
 	}
 	
+	//Default constructor;
 	public Packet(){ }
 	
 	//toString overload
@@ -81,7 +89,7 @@ public class Packet {
 		if(input[i++]!=0) return false;
 		Req = input[i++];
 		if(Req<1||Req>5)  return false;
-		//Handling READ/WRITE requests;
+		//Handling READ/WRITE;
 		if(Req==1||Req==2){
 			File = strExtract(input, getNextVal(0,i,input)-i, i);
 			i = getNextVal(0,i,input);
@@ -89,14 +97,17 @@ public class Packet {
 			Mode = strExtract(input, getNextVal(0,i,input)-i, i);
 			i = getNextVal(0,i,input);
 		}
+		//Handling DATA;
 		else if(Req == 3){
 			pNum = b2i(byteExtract(input,BLOCKNUMBYTESIZE,i));
 			i+=BLOCKNUMBYTESIZE;
 			bData = byteExtract(input,DATASIZE,i);
 		}
+		//Handling ACK;
 		else if(Req == 4){
 			pNum = b2i(byteExtract(input,BLOCKNUMBYTESIZE,i));
 		}
+		//Handling ERR;
 		else if(Req == 5){
 			pNum = b2i(byteExtract(input,BLOCKNUMBYTESIZE,i));
 			i+=2;
@@ -158,6 +169,7 @@ public class Packet {
 			return offset + input.length; }
 		return -1;
 	}
+	//Extracts a string from an array of bytes;
 	private String strExtract(byte[] input, int size, int start){
 		if(size <= 0) return "";
 		byte[] output = new byte[size];
@@ -186,10 +198,14 @@ public class Packet {
 		}
 		return result;
 	}
+	
+	//Returns what each request actually means;
 	private String Req2Str(){
 		switch (Req){
 		case 1 : return "RRQ"  ;  case 2 : return "WRQ";
 		case 3 : return "DATA" ;  case 4 : return "ACK";
 		case 5 : return "ERROR";} return "UNDEFINED";
 	}
+	
+	//TODO: ErrCode2Str: Shows what the Error Code means.
 }
