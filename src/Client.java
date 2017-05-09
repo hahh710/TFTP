@@ -31,30 +31,31 @@ public class Client{
 		help.print("Initialized");
 	}
 	
-	@SuppressWarnings({ "resource"})
 	public void begin(){
 		int request;
 		//Get the request from the user.
+		Scanner sc2 = new Scanner(System.in);
 		while(true){
 			help.print("What type of request would you like to make(RRQ/WRQ)?");
 			
-			String input = new Scanner(System.in).nextLine();
+			String input = sc2.nextLine();
 			if(input.toUpperCase().equals("RRQ")){ request=1; break;}
 			if(input.toUpperCase().equals("WRQ")){ request=2; break;}
 			help.print("Invalid Request! Select either 'RRQ'(Read) or 'WRQ' (Write)");
 		}
+		
 		if(request==1){
 			//Read Request;
 			
 			//Get the file to read from the server.
 			help.print("Please enter the name of the file you wish to access:");
-			String sendFile = new Scanner(System.in).nextLine();
+			String sendFile = sc2.nextLine();
 			
 			//Get the file to save data to.
 			FileOutputStream FOut;
 			while(true){
 				help.print("Please enter the name of the file you want to save the data to:");
-				String saveFile = new Scanner(System.in).nextLine();
+				String saveFile = sc2.nextLine();
 				FOut = help.OpenOFile(workingDir + saveFile, true);
 				if(FOut==null) help.print("File already exists! Please use another!");
 				else		   break;
@@ -65,6 +66,7 @@ public class Client{
 			
 			//Attempt to handshake with the server to get the size of the file from the server;
 			//Send the request.
+			System.out.println();
 			help.print("Attempting request...");
 			
 			Packet req = new Packet(1, sendFile, "netascii");
@@ -72,6 +74,7 @@ public class Client{
 			if(rec.GetRequest()==4){ numBlock=rec.GetPacketN(); }
 			else{System.exit(1);}
 			
+			System.out.println();
 			help.print("Request Success, receiving "+numBlock+" blocks.");
 			try{
 				//Once Handshake is established, initiate file transfer.
@@ -93,22 +96,23 @@ public class Client{
 					ack = new Packet(rec.GetPacketN());
 				}
 				ack = new Packet(numBlock);
-				help.sendPacket(ack, soc, serverAddress, Port);
+				ack = help.sendReceive(ack, soc, serverAddress, Port);
 			}
 			catch (Exception e) { e.printStackTrace(); System.exit(1); }
+			System.out.println();
 			help.print("File transfer complete!");
 			try { FOut.close(); } catch (IOException e) { e.printStackTrace(); }
 		}
 		else{
 			//Write Request;
 			help.print("Please enter the save location on the server:");
-			String saveFile = new Scanner(System.in).nextLine();
+			String saveFile = sc2.nextLine();
 			String sendFile;
 			//Get the file to save data to.
 			FileInputStream FIn;
 			while(true){
 				help.print("Please enter the name of the file you wish to read from:");
-				sendFile = new Scanner(System.in).nextLine();
+				sendFile = sc2.nextLine();
 				FIn = help.OpenIFile(workingDir + sendFile);
 				if(FIn==null) 	help.print("File doesnt exist! Please use another!");
 				else		   	break;
@@ -140,13 +144,27 @@ public class Client{
 					curBlock++;
 				} else System.exit(1);
 			}
+			
 			help.print("File transfer complete!");
 		}
+		sc2.close();
 	}
+	
 	public static void main(String[] args){
 		try {
-			Client c = new Client(23, InetAddress.getLocalHost(),new java.io.File( "." ).getCanonicalPath() + "\\",true);
+			boolean verbose;
+			Scanner sc = new Scanner(System.in);
+			while(true){
+				System.out.println("Would you like to run it in verbose mode (Y/N)?");
+				
+				String input = sc.nextLine();
+				if(input.toUpperCase().equals("Y")){ verbose=true; break;}
+				if(input.toUpperCase().equals("N")){ verbose=false; break;}
+				System.out.println("Invalid Mode! Select either 'Y'(Yes), 'N'(No)");
+			}
+			Client c = new Client(23, InetAddress.getLocalHost(),new java.io.File( "." ).getCanonicalPath() + "\\",verbose);
 			c.begin();
+			sc.close();
 		} catch (Exception e) { e.printStackTrace(); }
 		
 	}

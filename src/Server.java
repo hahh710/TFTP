@@ -19,6 +19,7 @@ import java.io.IOException;
 import java.net.*;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Scanner;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import javax.swing.*;
@@ -26,7 +27,18 @@ import javax.swing.*;
 //When program is run, server is called to create a Server Master;
 public class Server{
 	public static void main(String[] args){
-		ServerMaster SM = new ServerMaster(true);
+		boolean verbose;
+  	  Scanner sc = new Scanner(System.in);
+  	  while(true){
+				System.out.println("Would you like to run it in verbose mode (Y/N)?");
+				
+				String input = sc.nextLine();
+				if(input.toUpperCase().equals("Y")){ verbose=true; break;}
+				if(input.toUpperCase().equals("N")){ verbose=false; break;}
+				System.out.println("Invalid Mode! Select either 'Y'(Yes), 'N'(No)");
+		 }
+  	 sc.close();
+		ServerMaster SM = new ServerMaster(verbose);
 		SM.start();
 		JOptionPane.showMessageDialog(null, "Press 'OK' at any point to quit");
 		SM.Stop();
@@ -188,6 +200,8 @@ class ServerWorker extends Thread{
 					curBlock++;
 				} else System.exit(1);
 			}
+			ack = new Packet(curBlock);
+			help.sendPacket(ack, soc, address, port);
 			try { FIn.close(); } catch (IOException e) { e.printStackTrace(); }
 			help.print("File transfer complete!");
 		}

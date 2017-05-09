@@ -23,7 +23,18 @@ public class ErrorSimulator {
    public ErrorSimulator()
    {
       try {
-         help = new helplib("ErrorSim",true);
+    	  boolean verbose;
+    	  Scanner sc = new Scanner(System.in);
+    	  while(true){
+				System.out.println("Would you like to run it in verbose mode (Y/N)?");
+				
+				String input = sc.nextLine();
+				if(input.toUpperCase().equals("Y")){ verbose=true; break;}
+				if(input.toUpperCase().equals("N")){ verbose=false; break;}
+				System.out.println("Invalid Mode! Select either 'Y'(Yes), 'N'(No)");
+		 }
+    	 sc.close();
+         help = new helplib("ErrorSim",verbose);
     	 //Receive socket bind to port 23
          receiveSocket = new DatagramSocket(23);
          // socket for send and receive bind to an available port
