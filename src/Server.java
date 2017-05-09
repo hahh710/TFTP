@@ -1,3 +1,18 @@
+/**
+ * Client for a TFTP
+ *
+ *Iteration 1:
+ * Server class starts a ServerMaster thread and waits for user
+ *   to press OK, on a displayed popup, to end ServerMaster.
+ * ServerMaster continually awaits a connection at port 69.
+ * ServerMaster receives connection and passes it to a
+ *   WorkerHandler thats working on any request with the Client's
+ *   port and address, or creates a WorkerHandler if none exist.
+ * Newly created WorkerHandler starts up a ServerWorker thread,
+ *   works on handling the client's request.
+ * Upon ServerMaster ending, waits for all workers to complete,
+ *   before closing and refuses any further connections.
+ */
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -8,15 +23,9 @@ import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import javax.swing.*;
 
+//When program is run, server is called to create a Server Master;
 public class Server{
 	public static void main(String[] args){
-		/*byte[] sdata = new byte[508];
-		for(int i = 0; i < sdata.length; i++)
-			sdata[i] = 6;
-		Packet P = new Packet(1,sdata);
-		System.out.println(P);
-		System.out.println(Arrays.toString(P.toBytes()));*/
-		
 		ServerMaster SM = new ServerMaster(true);
 		SM.start();
 		JOptionPane.showMessageDialog(null, "Press 'OK' at any point to quit");
@@ -24,6 +33,7 @@ public class Server{
 	}
 }
 
+//ServerMaster, awaits for connection and passes on to WorkerHandler;
 class ServerMaster extends Thread{
 	private DatagramPacket  		rpkt;
 	private DatagramSocket 			soc;
@@ -42,10 +52,12 @@ class ServerMaster extends Thread{
 		running = true;
 		verbose = Verbose;
 	}
+	//Tells the ServerMaster to quit;
 	public void Stop(){
 		running = false;
 		help.print("Closing server, waiting for workers to complete");
 	}
+	//Main ServerMaster logic;
 	public void run(){
 		//Server will listen and timeout and loop back until it gets a request;
 		while(running || !allDone()){
@@ -54,6 +66,7 @@ class ServerMaster extends Thread{
 			try { 
 				soc.setSoTimeout(500);
 				soc.receive(rpkt);
+				//If server times out, the following part is skipped;
 				help.print("Got a connection, deligating to worker.");
 				help.printd("The bytes recieved are:\n"+ Arrays.toString(rec));
 				handlePacket(new Packet(rec),rpkt.getPort(),rpkt.getAddress());
@@ -78,6 +91,7 @@ class ServerMaster extends Thread{
 	
 	//Sends the packet to a worker thats active and has the same address, else create a new one;
 	private void handlePacket(Packet request, int port, InetAddress address){
+		//Locates appropriate Worker to send packet to;
 		for(int i=0;i<workers.size();i++){
 			if(!workers.get(i).isDone()){
 				if(workers.get(i).address.equals(address) && workers.get(i).port == port){
@@ -99,6 +113,8 @@ class WorkerHandler{
 	public InetAddress address;
 	private ServerWorker worker;
 	private BlockingQueue<Packet> bQueue;
+	
+	//Constructor for worker;
 	public WorkerHandler(int Port, InetAddress clientAddress, Packet request, boolean verbose){
 		bQueue 	= new ArrayBlockingQueue<Packet>(10);
 		port	= Port;
@@ -107,20 +123,22 @@ class WorkerHandler{
 		worker.start();
 	}
 	
+	//Wait for ServerWorker Thread to complete;
 	public void Wait(){
 		try { worker.join(); }
 		catch (InterruptedException e) { e.printStackTrace(); }
 	}
 	
+	//Checks if ServerWorker Thread to complete;
 	public boolean isDone(){
 		if(worker.getState()==Thread.State.TERMINATED) return true;
 		return false;
 	}
 	
-	//Passes the request to the thread
+	//Passes the request to the thread;
 	public void passReq(Packet request){
-        try { bQueue.put(request);
-        } catch (InterruptedException e) { e.printStackTrace(); }
+		try { bQueue.put(request);
+		} catch (InterruptedException e) { e.printStackTrace(); }
 	}
 }
 
@@ -132,6 +150,8 @@ class ServerWorker extends Thread{
 	DatagramSocket soc;
 	helplib help;
 	private BlockingQueue<Packet> bQueue;
+	
+	//Constructor;
 	public ServerWorker(int Port, InetAddress clientAddress, Packet request, boolean verbose, BlockingQueue<Packet> Queue){
 		port 	= Port;
 		address = clientAddress;
@@ -143,6 +163,7 @@ class ServerWorker extends Thread{
 		catch(SocketException se){ help.print("Failed to create Socket."); System.exit(1); }
 	}
 	
+	//Main ServerWorker logic;
 	public void run(){
 		if(mainReq.GetRequest()==1){
 			//Read request;
@@ -201,6 +222,7 @@ class ServerWorker extends Thread{
 		}
 	}
 	
+	//Gets a packet from the parent WorkerHandler.
 	private Packet receivePacket(){
 		try {
 			Packet p = bQueue.take();
@@ -209,7 +231,6 @@ class ServerWorker extends Thread{
 		} catch (InterruptedException e) { e.printStackTrace(); }
 		return null;
 	}
-	
 }
 
 
