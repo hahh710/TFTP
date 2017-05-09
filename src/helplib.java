@@ -1,3 +1,12 @@
+/**
+ * A collection of functions that is to be used across
+ *   the various classes so as to avoid duplicate functions.
+ *
+ *Iteration Exclusive:
+ * Future Iterations may add more helper functions when needed.
+ *      
+ */
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -22,6 +31,7 @@ public class helplib {
 			print("FileIO::ERROR::File not found. "+ path); return null; 
 		}
 	}
+	//Open a File deal with whether or not its to exist.
 	public FileOutputStream OpenOFile(String path, boolean notExist){
 		File dir = new File(path);
 		if(!dir.exists() && notExist){
