@@ -1,7 +1,11 @@
 Read Me
 
 Name: 
-Adebola Shittu 100918348
+Adebola Shittu         100918348 - Error Simulator
+Rami Daham             100995251 - Reports and Documentation
+Vishahan Thilagakumar  100994856 - Server
+Kariharan Thiagakumar  100922048 - Client
+
 =====================================================================
 File Transfer Protocol
 Sending File format from the Client to the intermediate and finally 
@@ -73,9 +77,30 @@ An assortment of reusable functins accorss the classes. Helplib has a method for
 * Print with Verbose communication
 * handing File input and output
 
-packet
-packet hide away manually dealing with creating byte to be sent in Datagram Packet.
+Packet
+This hides away manually dealing with creating byte to be sent in Datagram Packet.
 
 Anything other than Above will give an Invalid Packet and the 
 Server will throw an exception
 
+Packet Format follows TFTP format specifications 
+   Type   Op #     Format without header
+   
+          2 bytes    string   1 byte     string   1 byte
+          -----------------------------------------------
+   RRQ/  | 01/02 |  Filename  |   0  |    Mode    |   0  |
+   WRQ    -----------------------------------------------
+          2 bytes    2 bytes       n bytes
+          ---------------------------------
+   DATA  | 03    |   Block #  |    Data    |
+          ---------------------------------
+          2 bytes    2 bytes
+          -------------------
+   ACK   | 04    |   Block #  |
+          --------------------
+          2 bytes  2 bytes        string    1 byte
+          ----------------------------------------
+   ERROR | 05    |  ErrorCode |   ErrMsg   |   0  |
+          ----------------------------------------
+   (https://tools.ietf.org/html/rfc1350)
+  
