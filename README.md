@@ -1,4 +1,6 @@
 Read Me
+
+Adebola Shittu 100918348
 =====================================================================
 File Transfer Protocol
 Sending File format from the Client to the intermediate and finally 
@@ -8,8 +10,10 @@ Client:
   * Ensure that all files are on the same machine
     If not, change the Inet Address to match the IP address of the intermediate
 
+
 ===================================================================
 Getting IP Address
+
 * Run command Prompt on the machine
 * On window Machine (Enter Ip config) or ipconfig on Linux Machine
 * if the machine are using wifi
@@ -59,6 +63,7 @@ Helper Function
 
 Instruction:
 * Ensure that helplib and packet are in the file project as the client, simulator and server
+
 
 Helplib
 An assortment of reusable functins accorss the classes. Helplib has a method for:
