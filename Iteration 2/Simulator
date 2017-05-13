@@ -8,6 +8,7 @@
  *      3. Receive acknowledgement from server and send to client
  *      4. Then wait to Receive
  *      
+ *      ERROR:   Acknowledgement packet to Client is sending to the wrong port
  */
 import java.io.*;
 import java.net.*;
@@ -19,7 +20,7 @@ public class ErrorSimulator {
    private Packet 		  Packet;
    // UDP datagram packets and sockets used to send / receive
    private DatagramPacket ServerReceivePacket, clientReceivePacket, errorPacket;
-   private DatagramSocket receiveSocket, sendSocket, sendReceiveSocket;
+   private DatagramSocket receiveSocket, sendSocket, sendReceiveSocket, sendSocketw;
    private int userInput;
    private Scanner sc;
    private InetAddress address;
@@ -139,6 +140,7 @@ public class ErrorSimulator {
          help.print("Length: " + len);
          help.printd("Containing: "+Arrays.toString(data));
          
+         //Sending Acknowledgement to Client
          sendAckToClient(ServerReceivePacket, clientPort, address, data);
         }// end of For loop
       }
@@ -146,7 +148,13 @@ public class ErrorSimulator {
       
      public void sendAckToClient(DatagramPacket sendPacket, int port, InetAddress addr, byte[] data){
          // Construct a datagram packet that is to be sent to a specified port
-        // sendPacket = new DatagramPacket(receivePacket, address, port);
+       
+    	// errorPacket = new DatagramPacket(sendPacket, address, port);
+    	 
+    	
+   	     String msg = new String(sendPacket.getData());
+	  
+   	     sendPacket = new DatagramPacket(msg.getBytes(), msg.length(), addr, port);
 
          help.print( "Simulator: Sending packet:");
          help.print("To host: " + addr);
@@ -157,6 +165,7 @@ public class ErrorSimulator {
 
          // Send the datagram packet to the client via a new socket.
 
+         
          try {
             // Construct a new datagram socket and bind it to any port
             // on the local host machine. This socket will be used to
@@ -178,7 +187,7 @@ public class ErrorSimulator {
          help.print("");
 
          // We're finished with this socket, so close it.
-         sendSocket.close();
+         //sendSocket.close();
     
      } 
    
