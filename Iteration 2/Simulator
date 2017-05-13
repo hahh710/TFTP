@@ -2,7 +2,7 @@
  * Error Simulator for a TFTP
  *Adapted from the File provided by the Professor
  *
- *Iteration 1:
+ *Iteration 2:
  *      1. Receive File name from client and send to Server.
  *      2. Wait to receive from the Server
  *      3. Receive acknowledgement from server and send to client
