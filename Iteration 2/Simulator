@@ -217,7 +217,14 @@ public class ErrorSimulator {
   // For sending Packet
   public void sendPacket(DatagramSocket soc, DatagramPacket packet, InetAddress addr, byte[] data, int port){
 	  
-	  help.print("Simulator: sending packet to Server.");
+	  help.print("Simulator: Inside sendPacket method: attempting to send");
+	  
+	  port = 69;
+	  String msg = new String(packet.getData());
+	  
+	  packet = new DatagramPacket(msg.getBytes(), msg.length(), addr, port);
+	  
+	  
 	  
 	  help.print("Packet being sent:" + packet.getData());
 	  
