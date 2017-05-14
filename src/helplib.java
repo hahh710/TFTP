@@ -31,7 +31,6 @@ public class helplib {
 			print("FileIO::ERROR::File not found. "+ path); return null; 
 		}
 	}
-	//Open a File deal with whether or not its to exist.
 	public FileOutputStream OpenOFile(String path, boolean notExist){
 		File dir = new File(path);
 		if(!dir.exists() && notExist){
@@ -102,7 +101,7 @@ public class helplib {
 		catch (Exception e) { e.printStackTrace(); System.exit(1); }
 	}
 	
-	//Helper shortens the receive command;
+	/*//Helper shortens the receive command;
 	public byte[] recievePacket(DatagramSocket soc){
 		try{
 			byte[] bRec = new byte[Packet.PACKETSIZE];
@@ -113,16 +112,61 @@ public class helplib {
 		}
 		catch (Exception e) { e.printStackTrace(); System.exit(1); }
 		return null;
+	}*/
+	
+	//Helper shortens the receive command;
+	public Packet recievePacket(DatagramSocket soc){
+		Packet rec = new Packet();
+		try{
+			byte[] bRec = new byte[Packet.PACKETSIZE];
+			DatagramPacket rpkt = new DatagramPacket(bRec,bRec.length);
+			soc.receive(rpkt);
+			printd("Packet received from:\nPort:    "+rpkt.getPort()+"\nAddress: "+ rpkt.getAddress());
+			printd("Got the following bytes:\n"+Arrays.toString(bRec));
+			rec.byteParseFill(bRec);
+			rec.SetAddress(rpkt.getAddress());
+			rec.SetPort(rpkt.getPort());
+			return rec;
+		}
+		catch (Exception e) { e.printStackTrace(); System.exit(1); }
+		return rec;
 	}
+
 	
 	//Shortens the action of sending and receiving data;
 	public Packet sendReceive(Packet p, DatagramSocket soc, InetAddress addr, int port){
 		sendPacket(p, soc, addr, port);
 		printd("Awaiting response...");
-		byte[] bRec = recievePacket(soc);
-		Packet rec = new Packet();
-		rec.byteParseFill(bRec);
+		Packet rec = recievePacket(soc);
 		printd("Bytes parsed into following Packet:\n"+rec);
 		return rec;
 	}
+
+	
+	//Allows the checking of a packet an whether or not its okay;
+	public boolean isOkay(Packet P, int Request){
+		if(P.GetRequest() == 5) {
+			print("Error received.");
+			return !handleError(P);
+		}
+		else if(P.GetRequest() != Request) {
+			print("Unexpected request.");
+			return false;
+		}
+		else if(!P.GetValid()) {
+			print("Invalid packet received.");
+			return false;
+		}
+		return true;
+	}
+	
+	//Allows Handles any error received;
+	public boolean handleError(Packet P){
+		if(P.GetRequest() == 5) {
+			print(P.toString()); 
+			return true;
+		}
+		return false;
+	}
+	
 }

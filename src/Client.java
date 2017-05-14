@@ -71,8 +71,11 @@ public class Client{
 			
 			Packet req = new Packet(1, sendFile, "netascii");
 			Packet rec = help.sendReceive(req, soc, serverAddress, Port);
-			if(rec.GetRequest()==4){ numBlock=rec.GetPacketN(); }
-			else{System.exit(1);}
+			serverAddress = rec.GetAddress();
+			Port = rec.GetPort();
+			
+			if(!help.isOkay(rec, 4)){ return; }
+			numBlock=rec.GetPacketN();
 			
 			System.out.println();
 			help.print("Request Success, receiving "+numBlock+" blocks.");
@@ -83,6 +86,7 @@ public class Client{
 				//Loop that transfers the file.
 				while(curBlock < numBlock){
 					rec = help.sendReceive(ack, soc, serverAddress, Port);
+					if(!help.isOkay(rec, 3)){ return; }
 					//Makes sure the packet is valid and then writes it to file.
 					if(curBlock+1==rec.GetPacketN()){ 
 						curBlock++; 
@@ -127,22 +131,22 @@ public class Client{
 			//Send the request;
 			Packet req = new Packet(2, saveFile, "netascii");
 			Packet rec = help.sendReceive(req, soc, serverAddress, Port);
-			if(rec.GetRequest()==4){ }
-			else{System.exit(1);}
+			serverAddress = rec.GetAddress();
+			Port = rec.GetPort();
+			if(!help.isOkay(rec, 4)){ return; }
 
 			help.print("Request Success, sending "+numBlock+" blocks.");
 			//Ready for file transfer;
 			req = new Packet(numBlock);
 			rec = help.sendReceive(req, soc, serverAddress, Port);
-			if(rec.GetRequest()==4){ }
-			else{System.exit(1);}
+			if(!help.isOkay(rec, 4)){ return; }
+			
 			while(curBlock <= numBlock){
 				byte[] bData = help.ReadData(FIn, curBlock, Packet.DATASIZE);
 				Packet ack = new Packet(curBlock,bData);
 				rec = help.sendReceive(ack, soc, serverAddress, Port);
-				if(rec.GetRequest()==4){
-					curBlock++;
-				} else System.exit(1);
+				if(!help.isOkay(rec, 4)){ return; }
+				curBlock++;
 			}
 			
 			help.print("File transfer complete!");

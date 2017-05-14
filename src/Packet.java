@@ -5,9 +5,13 @@
  * Built to be compatible with future iterations with minimal changes.
  *      
  */
+
+
+import java.net.InetAddress;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 
+//Packet Object class to avoid manually working with packets.
 public class Packet {
 	//Public packet MetaData Variables to allow for the max packets to easily be edited.
 	public static int PACKETSIZE       = 512;
@@ -16,22 +20,30 @@ public class Packet {
 	public static int MAXPACKETS       = (int) Math.pow(2, 8*BLOCKNUMBYTESIZE);
 	
 	//Private packet variables.
-	private int    Req     = 0;
-	private byte[] bData   = new byte[DATASIZE];
-	private int    pNum    = 0;
-	private int    ErrCode = 0;
-	private String ErrMSG  = "";
-	private String File    = "";
-	private String Mode    = "";
-	
+	private int    		Req     = 0;
+	private byte[] 		bData   = new byte[DATASIZE];
+	private int    		pNum    = 0;
+	private int    		ErrCode = 0;
+	private String 		ErrMSG  = "";
+	private String 		File    = "";
+	private String 		Mode    = "";
+	private boolean 	valid	= true;
+	private int			Port    = 0;
+	private InetAddress	Address = null;
 	//Getters;
-	public int    GetRequest() { return Req;     }
-	public byte[] GetData   () { return bData;   }
-	public int    GetPacketN() { return pNum;    }
-	public int    GetErrCode() { return ErrCode; }
-	public String GetErrMSG () { return ErrMSG;  }
-	public String GetFile   () { return File;    }
-	public String GetMode   () { return Mode;    }
+	public int     		GetRequest() { return Req;     }
+	public byte[]  		GetData   () { return bData;   }
+	public int     		GetPacketN() { return pNum;    }
+	public int     		GetErrCode() { return ErrCode; }
+	public String  		GetErrMSG () { return ErrMSG;  }
+	public String  		GetFile   () { return File;    }
+	public String  		GetMode   () { return Mode;    }
+	public boolean 		GetValid  () { return valid;   }
+	public int	   		GetPort   () { return Port;	   }
+	public InetAddress 	GetAddress() { return Address; }
+	
+	public void	SetPort 	(int Port) 			  { this.Port = Port;		}
+	public void	SetAddress 	(InetAddress Address) { this.Address = Address; }
 	
 	//Constructors-----------------------------------------------------------------------//
 	//Read and Write requests;
@@ -39,6 +51,7 @@ public class Packet {
 		Req  = r;
 		File = f;
 		Mode = m;
+		valid = true;
 	}
 	
 	//Data Packet
@@ -46,12 +59,14 @@ public class Packet {
 		Req   = 3;
 		bData = d;
 		pNum  = n;
+		valid = true;
 	}
 	
 	//Acknowledgement Packet;
 	public Packet(int n){
 		Req  = 4;
 		pNum = n;
+		valid = true;
 	}
 	
 	//Error Packet;
@@ -59,14 +74,13 @@ public class Packet {
 		Req     = 5;
 		ErrCode = e;
 		ErrMSG  = m;
+		valid = true;
 	}
 	
-	//Converts a byte array to a Packet;
 	public Packet(byte[] data){
 		byteParseFill(data);
 	}
 	
-	//Default constructor;
 	public Packet(){ }
 	
 	//toString overload
@@ -89,34 +103,36 @@ public class Packet {
 		if(input[i++]!=0) return false;
 		Req = input[i++];
 		if(Req<1||Req>5)  return false;
-		//Handling READ/WRITE;
+		//Handling READ/WRITE requests;
 		if(Req==1||Req==2){
 			File = strExtract(input, getNextVal(0,i,input)-i, i);
 			i = getNextVal(0,i,input);
 			if(input[i++]!=0) return false;
 			Mode = strExtract(input, getNextVal(0,i,input)-i, i);
 			i = getNextVal(0,i,input);
+			valid = true;
 		}
-		//Handling DATA;
 		else if(Req == 3){
 			pNum = b2i(byteExtract(input,BLOCKNUMBYTESIZE,i));
 			i+=BLOCKNUMBYTESIZE;
 			bData = byteExtract(input,DATASIZE,i);
+			valid = true;
 		}
-		//Handling ACK;
 		else if(Req == 4){
 			pNum = b2i(byteExtract(input,BLOCKNUMBYTESIZE,i));
+			valid = true;
 		}
-		//Handling ERR;
 		else if(Req == 5){
 			pNum = b2i(byteExtract(input,BLOCKNUMBYTESIZE,i));
 			i+=2;
 			ErrMSG = strExtract(input, getNextVal(0,i,input)-i, i);
+			valid = true;
 		}
 		else{
-			return false;
+			valid = false;
 		}
 		return true;
+		
 	}
 	
 	//Converts packet to byte array;
@@ -148,6 +164,7 @@ public class Packet {
 		return out;
 	}
 	
+
 	//Helper functions-------------------------------------------------------------------//
 	
 	//The following are mainly from Vishahan's (100994856), Assignment 1;
@@ -169,7 +186,6 @@ public class Packet {
 			return offset + input.length; }
 		return -1;
 	}
-	//Extracts a string from an array of bytes;
 	private String strExtract(byte[] input, int size, int start){
 		if(size <= 0) return "";
 		byte[] output = new byte[size];
@@ -198,14 +214,10 @@ public class Packet {
 		}
 		return result;
 	}
-	
-	//Returns what each request actually means;
 	private String Req2Str(){
 		switch (Req){
 		case 1 : return "RRQ"  ;  case 2 : return "WRQ";
 		case 3 : return "DATA" ;  case 4 : return "ACK";
 		case 5 : return "ERROR";} return "UNDEFINED";
 	}
-	
-	//TODO: ErrCode2Str: Shows what the Error Code means.
 }

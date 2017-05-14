@@ -171,6 +171,7 @@ class ServerWorker extends Thread{
 		bQueue 	= Queue;
 		help	= new helplib("ServerWorker@"+Port, verbose);
 		help.print("Worker created to handle the request:\n"+request);
+		help.print("From:\nPort:    "+port+"\nAddress: "+ address);
 		try{ soc = new DatagramSocket(); } 
 		catch(SocketException se){ help.print("Failed to create Socket."); System.exit(1); }
 	}
@@ -188,14 +189,35 @@ class ServerWorker extends Thread{
 			help.print("File located, Initiating transfer of "+ numBlock + " blocks.");
 			Packet ack = new Packet(numBlock);
 			help.sendPacket(ack, soc, address, port);
-			Packet rec = receivePacket();
+			Packet rec = help.recievePacket(soc);
+			if(!help.isOkay(rec, 4)){ 
+				Packet ERR = new Packet(4,"Invalid packet received.");
+				help.sendPacket(ERR, soc, address, port);
+				return; 
+			}
+			if(checkAddress(rec)){
+				Packet ERR = new Packet(5,"Packet received from unknown sender.");
+				help.sendPacket(ERR, soc, address, port);
+				return; 
+			}
 			if(rec.GetRequest()!=4) System.exit(1);
 			//File transfer loop;
 			while(curBlock <= numBlock){
 				byte[] bData = help.ReadData(FIn, curBlock, Packet.DATASIZE);
 				ack = new Packet(curBlock,bData);
 				help.sendPacket(ack, soc, address, port);
-				rec = receivePacket();
+				rec = help.recievePacket(soc);
+				if(!help.isOkay(rec, 4)){ 
+					Packet ERR = new Packet(4,"Invalid packet received.");
+					help.sendPacket(ERR, soc, address, port);
+					return; 
+				}
+				if(checkAddress(rec)){
+					Packet ERR = new Packet(5,"Packet received from unknown sender.");
+					help.sendPacket(ERR, soc, address, port);
+					return; 
+				}
+				
 				if(rec.GetRequest()==4){
 					curBlock++;
 				} else System.exit(1);
@@ -210,13 +232,34 @@ class ServerWorker extends Thread{
 			FileOutputStream FOut = help.OpenOFile(mainReq.GetFile(), true);
 			Packet ack = new Packet(0);
 			help.sendPacket(ack, soc, address, port);
-			Packet rec = receivePacket();
+			Packet rec = help.recievePacket(soc);
+			if(!help.isOkay(rec, 4)){ 
+				Packet ERR = new Packet(4,"Invalid packet received.");
+				help.sendPacket(ERR, soc, address, port);
+				return; 
+			}
+			if(checkAddress(rec)){
+				Packet ERR = new Packet(5,"Packet received from unknown sender.");
+				help.sendPacket(ERR, soc, address, port);
+				return; 
+			}
+			
 			int numBlock = rec.GetPacketN();
 			int curBlock = -1;
 			ack = new Packet(0);
 			help.sendPacket(ack, soc, address, port);
 			while(curBlock < numBlock){
-				rec = receivePacket();
+				rec = help.recievePacket(soc);
+				if(!help.isOkay(rec, 3)){ 
+					Packet ERR = new Packet(4,"Invalid packet received.");
+					help.sendPacket(ERR, soc, address, port);
+					return; 
+				}
+				if(checkAddress(rec)){
+					Packet ERR = new Packet(5,"Packet received from unknown sender.");
+					help.sendPacket(ERR, soc, address, port);
+					return; 
+				}
 				
 				//Makes sure the packet is valid and then writes it to file.
 				if(curBlock+1==rec.GetPacketN()){ 
@@ -234,9 +277,10 @@ class ServerWorker extends Thread{
 			try { FOut.close(); } catch (IOException e) { e.printStackTrace(); }
 			help.print("File transfer complete!");
 		}
+		
 	}
 	
-	//Gets a packet from the parent WorkerHandler.
+	/*//Gets a packet from the parent WorkerHandler.
 	private Packet receivePacket(){
 		try {
 			Packet p = bQueue.take();
@@ -244,7 +288,11 @@ class ServerWorker extends Thread{
 			return p;
 		} catch (InterruptedException e) { e.printStackTrace(); }
 		return null;
+	}*/
+	
+	private boolean checkAddress(Packet P){
+		if(P.GetPort()==port && P.GetAddress()==address) return true;
+		return false;
 	}
+	
 }
-
-
