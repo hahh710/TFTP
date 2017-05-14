@@ -56,7 +56,7 @@ class ServerMaster extends Thread{
 	
 	public ServerMaster(boolean Verbose){
 		//Creates a DatagramSocket
-		help = new helplib("Server", true);
+		help = new helplib("Server", Verbose);
 		workers = new ArrayList<WorkerHandler>();
 		try{ soc = new DatagramSocket(69); } 
 		catch(SocketException se){ help.print("Failed to create socket!"); System.exit(1); }
