@@ -24,7 +24,7 @@ public class ErrorSimulator {
    private int userInput;
    private Scanner sc;
    private InetAddress address;
-   private int clientPort;
+   private int clientPort, index;
    
    //Constructor for the Error Simulator class
    public ErrorSimulator()
@@ -193,7 +193,12 @@ public class ErrorSimulator {
    
    public void putError(DatagramPacket newPacket, int userInput, DatagramSocket soc, byte[] data, int port){   
 	   
-	   String msg = new String(newPacket.getData());	   
+	   //Putting the packet data into a String
+	   String msg = new String(newPacket.getData());
+	   
+	   // Change the packet to array Characters
+	   char[] msgArray = msg.toCharArray();
+	   
 	   help.print("Received Packet: " + msg);
 	   
 	   switch(userInput){
@@ -205,17 +210,96 @@ public class ErrorSimulator {
 			 sendPacket(soc, newPacket, address, data, 69);
 		   break;
 	   case 1: 
-		   // Do something
+		   
 		   help.print("Changed TFTP opcode");
+		   
+		   //Change RRQ to WRQ or WRQ to RRQ 
+		   if(msgArray[1]  == '1'){
+			   msgArray[1] = '2';
+			   
+			   help.print("Sending New Packet");
+			   newPacket = new DatagramPacket(msgArray.toString().getBytes(), msgArray.length, address, 69 );
+			   sendPacket(soc, newPacket, address, data, 69);
+			   break;
+		    }else if(msgArray[1]  == '2'){
+		    	msgArray[1] = '1';
+		    	help.print("Sending New Packet");
+		    	newPacket = new DatagramPacket(msgArray.toString().getBytes(), msgArray.length, address, 69 );
+				sendPacket(soc, newPacket, address, data, 69);
+		       break;   
+		    }
 		   
 		   break;
 	   case 2:
+		   //Replace the Filename
+		   StringBuilder msgb = new StringBuilder();
+		   
+		   for(int i = 1; i < msgArray.length-1 ; i++ ){
+			  if(msgArray[i] == '0'){
+				  msgb.append(msgArray, 2 , i-1).append("blahblah");
+				  
+				  help.print("Sending New Packet");
+				  newPacket = new DatagramPacket(msgArray.toString().getBytes(), msgArray.length, address, 69 );
+				  sendPacket(soc, newPacket, address, data, 69);
+			  } 
+		   }
 	   case 3:
+		   //Replace the Mode
+		   StringBuilder msgb1 = new StringBuilder(msg);
+		   
+		   //Find the index of 0 before mode 01Filename0Mode0
+		   for(int i = 2; i < msgArray.length-1 ; i++ ){
+			  if(msgArray[i] == '0'){
+				  index = i;
+			  }else{int index = 0;}
+			  break;
+		   }
+		   
+		   // Replace netascii with octet and octet with netascii
+		   if(msgArray[index] == 'n'){
+			   msgb1.replace(index, index+8, "octet");
+		   }else{msgb1.replace(index, index+5, "netascii");}
+		   
+		   help.print("Sending New Packet");
+			  newPacket = new DatagramPacket(msgArray.toString().getBytes(), msgArray.length, address, 69 );
+			  sendPacket(soc, newPacket, address, data, 69);
 	   case 4:
+		   //Change the Delimiter btw Filename and Mode to 1
+		  for(int i = 0; i<msgArray.length; i++){
+			  if(msgArray[i] == '0'){
+				  msgArray[i] = '1';
+			  }
+			  break;
+		  }
+		  
+		   help.print("Sending New Packet");
+			  newPacket = new DatagramPacket(msgArray.toString().getBytes(), msgArray.length, address, 69 );
+			  sendPacket(soc, newPacket, address, data, 69);
+			  
 	   case 5:
-	   case 6:
-	   case 7:
-	   case 8:
+		   //Change the Delimiter to 1
+           int i = msgArray.length-1;
+		   msgArray[i] = '1';
+		   
+		   help.print("Sending New Packet");
+			  newPacket = new DatagramPacket(msgArray.toString().getBytes(), msgArray.length, address, 69 );
+			  sendPacket(soc, newPacket, address, data, 69);
+	   case 6: 
+		   //Change the Socket
+		   try {
+			DatagramSocket socketb = new DatagramSocket();
+		} catch (SocketException e) {
+			e.printStackTrace();
+		}		  
+		   help.print("Sending New Packet");
+			  newPacket = new DatagramPacket(msgArray.toString().getBytes(), msgArray.length, address, 69 );
+		try {
+			sendSocketw.send(newPacket);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		   
+		   
 		   
 		 help.print("Calling sendPacket Method Now");
 		 sendPacket(soc, newPacket, address, data, 69);
@@ -268,15 +352,14 @@ public class ErrorSimulator {
 				
 				help.print("0:   Do Nothing");
 				help.print("1:   Invalid TFTP Opcode");
-				help.print("2:   Invalid Mode ");
-				help.print("4:   Invalid Filename");
-				help.print("5:   Invalid Delimeter btw Filename and Mode");
-				help.print("6:   Invalid Delimeter after Mode");
-				help.print("7:   Port Error");
-				help.print("8:   ");
+				help.print("2:   Invalid Filename");
+				help.print("3:   Invalid Mode ");
+				help.print("4:   Invalid Delimeter btw Filename and Mode");
+				help.print("5:   Invalid Delimeter after Mode");
+				help.print("6:   Port Error");
 				
 				//Get the user input and convert to integer
-				int userInput = Integer.parseInt(sc.nextLine());
+				userInput = Integer.parseInt(sc.nextLine());
 				
 				System.out.println("Input Selected: "+ userInput);
 				
