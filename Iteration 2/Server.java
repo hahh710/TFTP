@@ -178,6 +178,12 @@ class ServerWorker extends Thread{
 	
 	//Main ServerWorker logic;
 	public void run(){
+		if(!mainReq.GetMode().equals("netascii")){
+			Packet ack = new Packet(4,"Invalid file mode");
+			help.sendPacket(ack, soc, address, port);
+			soc.close();
+			return;
+		}
 		if(mainReq.GetRequest()==1){
 			//Read request;
 			FileInputStream FIn = help.OpenIFile(mainReq.GetFile());
@@ -193,11 +199,13 @@ class ServerWorker extends Thread{
 			if(!help.isOkay(rec, 4)){ 
 				Packet ERR = new Packet(4,"Invalid packet received.");
 				help.sendPacket(ERR, soc, address, port);
+				soc.close();
 				return; 
 			}
 			if(checkAddress(rec)){
 				Packet ERR = new Packet(5,"Packet received from unknown sender.");
 				help.sendPacket(ERR, soc, address, port);
+				soc.close();
 				return; 
 			}
 			if(rec.GetRequest()!=4) System.exit(1);
@@ -210,11 +218,13 @@ class ServerWorker extends Thread{
 				if(!help.isOkay(rec, 4)){ 
 					Packet ERR = new Packet(4,"Invalid packet received.");
 					help.sendPacket(ERR, soc, address, port);
+					soc.close();
 					return; 
 				}
 				if(checkAddress(rec)){
 					Packet ERR = new Packet(5,"Packet received from unknown sender.");
 					help.sendPacket(ERR, soc, address, port);
+					soc.close();
 					return; 
 				}
 				
@@ -236,11 +246,13 @@ class ServerWorker extends Thread{
 			if(!help.isOkay(rec, 4)){ 
 				Packet ERR = new Packet(4,"Invalid packet received.");
 				help.sendPacket(ERR, soc, address, port);
+				soc.close();
 				return; 
 			}
 			if(checkAddress(rec)){
 				Packet ERR = new Packet(5,"Packet received from unknown sender.");
 				help.sendPacket(ERR, soc, address, port);
+				soc.close();
 				return; 
 			}
 			
@@ -253,11 +265,13 @@ class ServerWorker extends Thread{
 				if(!help.isOkay(rec, 3)){ 
 					Packet ERR = new Packet(4,"Invalid packet received.");
 					help.sendPacket(ERR, soc, address, port);
+					soc.close();
 					return; 
 				}
 				if(checkAddress(rec)){
 					Packet ERR = new Packet(5,"Packet received from unknown sender.");
 					help.sendPacket(ERR, soc, address, port);
+					soc.close();
 					return; 
 				}
 				

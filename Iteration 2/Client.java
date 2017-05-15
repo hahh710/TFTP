@@ -166,7 +166,7 @@ public class Client{
 				if(input.toUpperCase().equals("N")){ verbose=false; break;}
 				System.out.println("Invalid Mode! Select either 'Y'(Yes), 'N'(No)");
 			}
-			Client c = new Client(69, InetAddress.getLocalHost(),new java.io.File( "." ).getCanonicalPath() + "\\",verbose);
+			Client c = new Client(23, InetAddress.getLocalHost(),new java.io.File( "." ).getCanonicalPath() + "\\",verbose);
 			c.begin();
 			sc.close();
 		} catch (Exception e) { e.printStackTrace(); }
