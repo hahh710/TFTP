@@ -1,7 +1,7 @@
 /**
  * Client for a TFTP
  *
- *Iteration 2:
+ *Iteration 1:
  * Server class starts a ServerMaster thread and waits for user
  *   to press OK, on a displayed popup, to end ServerMaster.
  * ServerMaster continually awaits a connection at port 69.
@@ -195,34 +195,29 @@ class ServerWorker extends Thread{
 			help.print("File located, Initiating transfer of "+ numBlock + " blocks.");
 			Packet ack = new Packet(numBlock);
 			help.sendPacket(ack, soc, address, port);
-			Packet rec = help.recievePacket(soc);
+			Packet rec = recurreceive(soc);
 			if(!help.isOkay(rec, 4)){ 
 				Packet ERR = new Packet(4,"Invalid packet received.");
 				help.sendPacket(ERR, soc, address, port);
 				soc.close();
 				return; 
 			}
-			if(checkAddress(rec)){
-				Packet ERR = new Packet(5,"Packet received from unknown sender.");
+			if(!help.isOkay(rec, 4)){ 
+				Packet ERR = new Packet(4,"Invalid packet received.");
 				help.sendPacket(ERR, soc, address, port);
 				soc.close();
 				return; 
 			}
+
 			if(rec.GetRequest()!=4) System.exit(1);
 			//File transfer loop;
 			while(curBlock <= numBlock){
 				byte[] bData = help.ReadData(FIn, curBlock, Packet.DATASIZE);
 				ack = new Packet(curBlock,bData);
 				help.sendPacket(ack, soc, address, port);
-				rec = help.recievePacket(soc);
+				rec = recurreceive(soc);
 				if(!help.isOkay(rec, 4)){ 
 					Packet ERR = new Packet(4,"Invalid packet received.");
-					help.sendPacket(ERR, soc, address, port);
-					soc.close();
-					return; 
-				}
-				if(checkAddress(rec)){
-					Packet ERR = new Packet(5,"Packet received from unknown sender.");
 					help.sendPacket(ERR, soc, address, port);
 					soc.close();
 					return; 
@@ -242,15 +237,9 @@ class ServerWorker extends Thread{
 			FileOutputStream FOut = help.OpenOFile(mainReq.GetFile(), true);
 			Packet ack = new Packet(0);
 			help.sendPacket(ack, soc, address, port);
-			Packet rec = help.recievePacket(soc);
+			Packet rec = recurreceive(soc);
 			if(!help.isOkay(rec, 4)){ 
 				Packet ERR = new Packet(4,"Invalid packet received.");
-				help.sendPacket(ERR, soc, address, port);
-				soc.close();
-				return; 
-			}
-			if(checkAddress(rec)){
-				Packet ERR = new Packet(5,"Packet received from unknown sender.");
 				help.sendPacket(ERR, soc, address, port);
 				soc.close();
 				return; 
@@ -261,15 +250,9 @@ class ServerWorker extends Thread{
 			ack = new Packet(0);
 			help.sendPacket(ack, soc, address, port);
 			while(curBlock < numBlock){
-				rec = help.recievePacket(soc);
-				if(!help.isOkay(rec, 3)){ 
+				rec = recurreceive(soc);
+				if(!help.isOkay(rec, 4)){ 
 					Packet ERR = new Packet(4,"Invalid packet received.");
-					help.sendPacket(ERR, soc, address, port);
-					soc.close();
-					return; 
-				}
-				if(checkAddress(rec)){
-					Packet ERR = new Packet(5,"Packet received from unknown sender.");
 					help.sendPacket(ERR, soc, address, port);
 					soc.close();
 					return; 
@@ -304,9 +287,21 @@ class ServerWorker extends Thread{
 		return null;
 	}*/
 	
+	private Packet recurreceive(DatagramSocket soc){
+		Packet rec = help.recievePacket(soc);
+		if(checkAddress(rec)){
+			Packet ERR = new Packet(5,"Packet received from unknown sender.");
+			help.sendPacket(ERR, soc, address, port);
+			return recurreceive(soc);
+		}
+		else return rec;
+	}
+	
 	private boolean checkAddress(Packet P){
 		if(P.GetPort()==port && P.GetAddress()==address) return true;
 		return false;
 	}
+	
+	
 	
 }
