@@ -107,7 +107,7 @@ public class ErrorSimulator {
          
          //Call the method to Add Error to the packet
          putError(clientReceivePacket, userInput, sendReceiveSocket, data, 69);
-      //}
+     
    }
       
       public void receiveAckFromServer(){
@@ -190,109 +190,139 @@ public class ErrorSimulator {
          //sendSocket.close();
     
      } 
+     
    
    public void putError(DatagramPacket newPacket, int userInput, DatagramSocket soc, byte[] data, int port){   
 	   
 	   //Putting the packet data into a String
 	   String msg = new String(newPacket.getData());
 	   
+	   // Converting the string to array
+	 //  String[] msgArray;
+	 //  System.arraycopy(msg, 0, msgArray, 0, msg.length());
+	   
+	   help.print(msg);
+	   
+	   //Converting the packet to byte
+	   byte[] message = new byte[512];
+	   
+	   help.print(""+ msg.length());
+	   help.print(""+ message.length);
+	   //Copying the message received into message which of type byte
+	  System.arraycopy(msg.getBytes(), 0, message, 0, msg.length());
+
+	   
 	   // Change the packet to array Characters
-	   char[] msgArray = msg.toCharArray();
+	 //  char[] msgArray = msg.toCharArray();
 	   
 	   help.print("Received Packet: " + msg);
 	   
 	   switch(userInput){
 	   case 0: 
-		   //Do something
-		   help.print("No changes to Packet");	
+		     //Do something
+		     help.print("No changes to Packet");	
 		   
 			 help.print("Calling sendPacket Method Now");
 			 sendPacket(soc, newPacket, address, data, 69);
 		   break;
+		   
 	   case 1: 
 		   
 		   help.print("Changed TFTP opcode");
 		   
 		   //Change RRQ to WRQ or WRQ to RRQ 
-		   if(msgArray[1]  == '1'){
-			   msgArray[1] = '2';
+		   if(message[1]  == '1'){
+			   message[1] = '2';
 			   
-			   help.print("Sending New Packet");
-			   newPacket = new DatagramPacket(msgArray.toString().getBytes(), msgArray.length, address, 69 );
+			   help.print("Whats being sent: " + message);
+			   
+			   help.print("Case 1: 1st if Sending New Packet");
+			   newPacket = new DatagramPacket(message, message.length, address, 69 );
 			   sendPacket(soc, newPacket, address, data, 69);
 			   break;
-		    }else if(msgArray[1]  == '2'){
-		    	msgArray[1] = '1';
-		    	help.print("Sending New Packet");
-		    	newPacket = new DatagramPacket(msgArray.toString().getBytes(), msgArray.length, address, 69 );
+		    }else if(message[1]  == '2'){
+		    	message[1] = '1';
+		    	help.print("Case 1: 2nd if: Sending New Packet");
+		    	newPacket = new DatagramPacket(message, message.length, address, 69 );
 				sendPacket(soc, newPacket, address, data, 69);
 		       break;   
+		    }else{		
+		    	help.print("Case 1: else: Sending New Packet");
+		    	newPacket = new DatagramPacket(message, message.length, address, 69 );
+			    sendPacket(soc, newPacket, address, data, 69);
+			    break;    
 		    }
 		   
-		   break;
-	   case 2:
-		   //Replace the Filename
+	   case 2:		   
+		   //Replace the Filename   
 		   StringBuilder msgb = new StringBuilder();
 		   
-		   for(int i = 1; i < msgArray.length-1 ; i++ ){
-			  if(msgArray[i] == '0'){
-				  msgb.append(msgArray, 2 , i-1).append("blahblah");
+		   for(int i = 1; i < msg.length() ; i++ ){
+			  if(Character.isAlphabetic(msg.charAt(i))){
+				  help.print("inside if Statement");
 				  
-				  help.print("Sending New Packet");
-				  newPacket = new DatagramPacket(msgArray.toString().getBytes(), msgArray.length, address, 69 );
-				  sendPacket(soc, newPacket, address, data, 69);
+				  //msgb.replace(0, i, "GF");
+				  msgb.append(" ");
 			  } 
-		   }
-	   case 3:
-		   //Replace the Mode
-		   StringBuilder msgb1 = new StringBuilder(msg);
-		   
-		   //Find the index of 0 before mode 01Filename0Mode0
-		   for(int i = 2; i < msgArray.length-1 ; i++ ){
-			  if(msgArray[i] == '0'){
-				  index = i;
-			  }else{int index = 0;}
+			  help.print("Case 2: "+ msgb);
+			  newPacket = new DatagramPacket(msg.toString().getBytes(), msg.length(), address, 69 );
+			  sendPacket(soc, newPacket, address, data, 69);
 			  break;
 		   }
 		   
-		   // Replace netascii with octet and octet with netascii
-		   if(msgArray[index] == 'n'){
-			   msgb1.replace(index, index+8, "octet");
-		   }else{msgb1.replace(index, index+5, "netascii");}
+	   case 3:
+		   //Replace the Mode
+		  // StringBuilder msgb1 = new StringBuilder(msg);
+		   byte[] mode = "octet".getBytes();
+		   byte[] mode2 = "netascii".getBytes();
 		   
-		   help.print("Sending New Packet");
-			  newPacket = new DatagramPacket(msgArray.toString().getBytes(), msgArray.length, address, 69 );
+		   //Find the index of 0 before mode 01Filename0Mode0
+		   for(int i = 1; i < message.length ; i++ ){
+			  if(message[i] == mode[i]){
+				  message[i] = mode2[i];
+				  help.print(""+ message[i]);
+				  help.print(""+ mode2[i]);
+			  }else{
+				  message[i] = mode[i];
+				  help.print(""+ message[i]);
+				  help.print(""+ mode[i]);
+			  }
+			  break;
+		   }
+		   
+		   help.print("case 3: Sending New Packet" + message);
+			  newPacket = new DatagramPacket(message, message.length, address, 69 );
 			  sendPacket(soc, newPacket, address, data, 69);
 	   case 4:
 		   //Change the Delimiter btw Filename and Mode to 1
-		  for(int i = 0; i<msgArray.length; i++){
-			  if(msgArray[i] == '0'){
-				  msgArray[i] = '1';
+		  for(int i = 0; i<message.length; i++){
+			  if(message[i] == '0'){
+				  message[i] = '1';
 			  }
 			  break;
 		  }
 		  
 		   help.print("Sending New Packet");
-			  newPacket = new DatagramPacket(msgArray.toString().getBytes(), msgArray.length, address, 69 );
+			  newPacket = new DatagramPacket(message, message.length, address, 69 );
 			  sendPacket(soc, newPacket, address, data, 69);
 			  
 	   case 5:
 		   //Change the Delimiter to 1
-           int i = msgArray.length-1;
-		   msgArray[i] = '1';
-		   
-		   help.print("Sending New Packet");
-			  newPacket = new DatagramPacket(msgArray.toString().getBytes(), msgArray.length, address, 69 );
+         
+		      message[message.length-1] = 1;
+		      help.print(""+ message[message.length-1]);
+		      help.print("Sending New Packet");
+			  newPacket = new DatagramPacket(message, message.length, address, 69 );
 			  sendPacket(soc, newPacket, address, data, 69);
 	   case 6: 
-		   //Change the Socket
+		   //Change the Socket/ Invalid TID
 		   try {
 			DatagramSocket socketb = new DatagramSocket();
 		} catch (SocketException e) {
 			e.printStackTrace();
 		}		  
-		   help.print("Sending New Packet");
-			  newPacket = new DatagramPacket(msgArray.toString().getBytes(), msgArray.length, address, 69 );
+		      help.print("Sending New Packet");
+			  newPacket = new DatagramPacket(message,message.length, address, 69);
 		try {
 			sendSocketw.send(newPacket);
 		} catch (IOException e) {
@@ -302,7 +332,7 @@ public class ErrorSimulator {
 		   
 		   
 		 help.print("Calling sendPacket Method Now");
-		 sendPacket(soc, newPacket, address, data, 69);
+		 sendPacket(soc, newPacket, address, data, 69); 
 
 	   }
    }
