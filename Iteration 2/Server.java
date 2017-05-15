@@ -283,7 +283,7 @@ class ServerWorker extends Thread{
 	
 	private Packet recurreceive(DatagramSocket soc){
 		Packet rec = help.recievePacket(soc);
-		if(checkAddress(rec)){
+		if(!checkAddress(rec)){
 			Packet ERR = new Packet(5,"Packet received from unknown sender.");
 			help.sendPacket(ERR, soc,rec.GetAddress(),rec.GetPort());
 			return recurreceive(soc);
@@ -292,10 +292,7 @@ class ServerWorker extends Thread{
 	}
 	
 	private boolean checkAddress(Packet P){
-		if(P.GetPort()==port && P.GetAddress()==address) return true;
+		if(P.GetPort()==port && P.GetAddress().equals(address)) return true;
 		return false;
 	}
-	
-	
-	
 }
