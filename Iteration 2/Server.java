@@ -286,6 +286,7 @@ class ServerWorker extends Thread{
 		if(!checkAddress(rec)){
 			Packet ERR = new Packet(5,"Packet received from unknown sender.");
 			help.sendPacket(ERR, soc,rec.GetAddress(),rec.GetPort());
+			help.print("Listenning for the connection again...");
 			return recurreceive(soc);
 		}
 		else return rec;
