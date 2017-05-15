@@ -202,12 +202,6 @@ class ServerWorker extends Thread{
 				soc.close();
 				return; 
 			}
-			if(!help.isOkay(rec, 4)){ 
-				Packet ERR = new Packet(4,"Invalid packet received.");
-				help.sendPacket(ERR, soc, address, port);
-				soc.close();
-				return; 
-			}
 
 			if(rec.GetRequest()!=4) System.exit(1);
 			//File transfer loop;
@@ -291,7 +285,7 @@ class ServerWorker extends Thread{
 		Packet rec = help.recievePacket(soc);
 		if(checkAddress(rec)){
 			Packet ERR = new Packet(5,"Packet received from unknown sender.");
-			help.sendPacket(ERR, soc, address, port);
+			help.sendPacket(ERR, soc,rec.GetAddress(),rec.GetPort());
 			return recurreceive(soc);
 		}
 		else return rec;
