@@ -1,7 +1,7 @@
 /**
  * Client for a TFTP
  *
- *Iteration 1:
+ *Iteration 2:
  * Server class starts a ServerMaster thread and waits for user
  *   to press OK, on a displayed popup, to end ServerMaster.
  * ServerMaster continually awaits a connection at port 69.
