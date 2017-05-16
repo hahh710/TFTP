@@ -48,7 +48,6 @@ public class ErrorSimulator {
 				System.out.println("Invalid Mode! Select either 'Y'(Yes), 'N'(No)");
 		 }
     	  
-    	 //sc.close();
          help = new helplib("ErrorSim",verbose);
          
     	 //Receive socket bind to port 23
@@ -62,6 +61,7 @@ public class ErrorSimulator {
       }
    }
 
+   //Method to receive packet from the client then calls the putError method
    public void passOnTFTP()
    {         
          byte[] data = new byte[Packet.PACKETSIZE];
@@ -82,30 +82,22 @@ public class ErrorSimulator {
          
          //get the port it received from
          clientPort = clientReceivePacket.getPort();
-         help.print("Host port: " + clientPort);
+         help.print("Client Port: " + clientPort);
          
          //Length of the packet received
          int len = clientReceivePacket.getLength();
-         help.print("Length: " + len);
-         help.print("Containing: " );
-         help.print("Containing: "+Arrays.toString(data));
+         help.print("Length of Received Packet: " + len + "\n");
+         help.print("Packet Received in Bytes: " +Arrays.toString(data));
          
          // Form a String from the byte array, and print the string.
          String received = new String(data,0,len);
-         help.print(received);
+         help.print("Packet Received in String: "+ received  + "\n");
   	   
          //Call the method to Add Error to the packet
-         putError(clientReceivePacket, userInput, sendReceiveSocket, data, 69);
-     
+         putError(clientReceivePacket, userInput, sendReceiveSocket, data, 69);    
    }
       
       public void receiveAckFromServer(){
-         
-         //Wait to receive Acknowledgement from the Receive
-         help.print("Waiting to Receive Acknowledgement from Server");
-         // Construct a DatagramPacket for receiving packets up
-         // to Packet.PACKETSIZE bytes long (the length of the byte array).
-      //  for(;;){
         	
          byte[] data = new byte[Packet.PACKETSIZE];
          ServerReceivePacket = new DatagramPacket(data, data.length);
@@ -120,41 +112,42 @@ public class ErrorSimulator {
          }
 
          // Process the received datagram.
-         help.print("Simulator: Packet received:");
+         help.print("Packet received:");
          
          serverPort = ServerReceivePacket.getPort();
          
          address = ServerReceivePacket.getAddress();
-         help.print("From host: " + address);
-         help.print("Host port: " + ServerReceivePacket.getPort());
+         help.print("From Server Address: " + address);
+         help.print("From server Port: " + ServerReceivePacket.getPort());
          int len = ServerReceivePacket.getLength();
          help.print("Length: " + len);
-         help.printd("Containing: "+Arrays.toString(data));
+         help.printd("Containing: "+Arrays.toString(data)  + "\n");
          
          //Sending Acknowledgement to Client
          sendAckToClient(ServerReceivePacket, clientPort, address, data);
-       // }// end of For loop
       }
       
-     
+     //Method to send the acknowledgement method to server
      public void sendAckToClient(DatagramPacket sendPacket, int port, InetAddress addr, byte[] data){
-         // Construct a datagram packet that is to be sent to a specified port
-       
-    	
-   	     String msg = new String(sendPacket.getData());
-	  
-   	     sendPacket = new DatagramPacket(msg.getBytes(), msg.length(), addr, port);
+ 
+  	   String msg = new String(sendPacket.getData());
+  	   
+  	   //Converting the packet to byte
+  	   byte[] message = new byte[512];
 
-         help.print( "Simulator: Sending packet:");
-         help.print("To host: " + addr);
-         help.print("Destination host port: " + port);
+  	   //Copying the message received into message which of type byte
+  	  System.arraycopy(msg.getBytes(), 0, message, 0, msg.length());
+	  
+   	     sendPacket = new DatagramPacket(message, message.length, addr, clientPort);
+
+         help.print( "Sending Acknowledgement to Client");
+         help.print("To Client Address: " + addr);
+         help.print("To Client Port: "    + clientPort);
          int  len = sendPacket.getLength();
          help.print("Length: " + len);
          help.printd("Containing: "+Arrays.toString(data));
 
          // Send the datagram packet to the client via a new socket.
-
-         
          try {
             sendSocket = new DatagramSocket();
          } catch (SocketException se) {
@@ -168,56 +161,33 @@ public class ErrorSimulator {
             e.printStackTrace();
             System.exit(1);
          }
-
-         help.print("Simulator: packet sent using port " + sendSocket.getLocalPort());
-         help.print("");
-        
      } 
      
-   
+   // Simulate the User error and send the new packet to the Server
    public void putError(DatagramPacket newPacket, int userInput, DatagramSocket soc, byte[] data, int port){   
 	   
 	   //Putting the packet data into a String
 	   String msg = new String(newPacket.getData());
-	   
-	   help.print(msg);
-	   
+
 	   //Converting the packet to byte
 	   byte[] message = new byte[512];
 	   
-	   help.print(""+ msg.length());
-	   help.print(""+ message.length);
+	   help.print("Received Packet Length: "+ msg.length() + "\n");
+	   
 	   //Copying the message received into message which of type byte
 	  System.arraycopy(msg.getBytes(), 0, message, 0, msg.length());
 	   
-	   help.print("Received Packet: " + msg);
-	   
 	   switch(userInput){
 	   case 0: 
-		   
-		     help.print("In Case 0 now");
-			 help.print("Calling sendPacket Method Now");
+			 help.print("Sending to Server for Handshaking");
 			 sendPacket(soc, newPacket, address, data, 69);
-			/* 
-		   int counti = 0, n = 3;
-		   for(int l=0; l< n; l++){
-			   counti++;
-		   }
-		   if(counti == 2) {break;}
-		   else{			 
-			 help.print("Sending to Client after the handshake");
-			 sendPacket(soc, newPacket, address, data, clientPort);
-			 }*/
-		     //Do something
-		     help.print("Sending for the Second Time");	
-		     
-		     newPacket = new DatagramPacket(message, message.length, address, clientPort);
-			 help.print("Calling sendPacket Method Now");
+			
 			 
-			 sendPacket(sendSocket, newPacket, address, data, clientPort);
+		     help.print("Sending Data received to Client\n");	
+		     newPacket = new DatagramPacket(message, message.length, address, clientPort);
+			 sendPacket(soc, newPacket, address, data, clientPort);
 		  
-			 break;
-		   
+			 break;		   
 	   case 1: 
 		   
 		   help.print("Changing TFTP opcode\n");
@@ -271,7 +241,7 @@ public class ErrorSimulator {
 			  newPacket = new DatagramPacket(message, message.length, address, 69 );
 			  sendPacket(soc, newPacket, address, data, 69);
 			  break;
-		   //}
+		 
 		   
 	   case 3:
 		   //Replace the Mode
@@ -338,10 +308,10 @@ public class ErrorSimulator {
 		   //Change the Socket Invalid TID
 		   help.print("Changing the Port");
 		   try {
-			DatagramSocket socketb = new DatagramSocket();
-		} catch (SocketException e) {
-			e.printStackTrace();
-		}		  
+			   DatagramSocket socketb = new DatagramSocket();
+		   } catch (SocketException e) {
+			   e.printStackTrace();
+		   }		  
 		      help.print("Port Changed by Creating New Socket");
 			  newPacket = new DatagramPacket(message,message.length, address, 69);
 		try {
@@ -356,6 +326,7 @@ public class ErrorSimulator {
 	   case 7:
 		   help.print("\n Change Opcode from RRQ or WRQ to ERROR");
 		   help.print("Original Packet: " + Arrays.toString(message));
+		   
 		   if(message[1]  == 1 || message[1] == 2){
 			   message[1] = 5;
 			   
@@ -369,30 +340,21 @@ public class ErrorSimulator {
 	   
    }// End of Method
     
-  // For sending Packet
+  // For sending Packet to server
   public void sendPacket(DatagramSocket soc, DatagramPacket packet, InetAddress addr, byte[] data, int port){
 	  
-	  help.print("Simulator: Inside sendPacket method: attempting to send");
-	  
-	  //port = 69;
 	  String msg = new String(packet.getData());
 	  
 	  packet = new DatagramPacket(msg.getBytes(), msg.length(), addr, port);
-	  
-	  
-	  
-	  help.print("Packet being sent:" + packet.getData());
-	  
-      help.print("To host: " + addr);
-      help.print("Destination host port: " + packet.getPort());
+
+      help.print("To Server Address: " + addr);
+      help.print("To Server Port: " + packet.getPort());
       int  len = packet.getLength();
-      help.print("Length: " + len);
+      help.print("Length: " + len + "\n");
       
       //Printing out the byte that is being sent
       help.printd("Containing: "+Arrays.toString(data));
-
-      // Send the datagram packet to the server via the send/receive socket.
-
+      
       try {
     	  help.print("Packet Sent to Server");
          soc.send(packet);
@@ -444,7 +406,9 @@ public class ErrorSimulator {
 	   //Create an object of the error simulator
 	   ErrorSimulator s = new ErrorSimulator();
        
+	   
 	   //call the askInput method first to ask the user for what to do
-       s.askInput();    
+       s.askInput(); 
+	   
    }
 }
