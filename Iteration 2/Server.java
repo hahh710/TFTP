@@ -1,3 +1,4 @@
+package iteration2;
 /**
  * Server for a TFTP
  *
@@ -193,6 +194,12 @@ class ServerWorker extends Thread{
 	//Main ServerWorker logic;
 	public void run(){
 		System.out.println();
+		if(mainReq.GetFile().equals("")){
+			Packet ack = new Packet(4,"No Filename");
+			help.sendPacket(ack, soc, address, port);
+			soc.close();
+			return;
+		}
 		if(!mainReq.GetMode().equals("netascii")){
 			Packet ack = new Packet(4,"Invalid file mode");
 			help.sendPacket(ack, soc, address, port);

@@ -1,3 +1,4 @@
+package iteration2;
 /**
  * A collection of functions that is to be used across
  *   the various classes so as to avoid duplicate functions.
@@ -131,6 +132,24 @@ public class helplib {
 		catch (Exception e) { e.printStackTrace(); System.exit(1); }
 		return rec;
 	}
+	
+	public Packet recievePacket(DatagramSocket soc, int timeout) throws IOException{
+		Packet rec = new Packet();
+		soc.setSoTimeout(timeout);
+		byte[] bRec = new byte[Packet.PACKETSIZE];
+		DatagramPacket rpkt = new DatagramPacket(bRec,bRec.length);
+		soc.receive(rpkt);
+		printd("Packet received from:\nPort:    "+rpkt.getPort()+"\nAddress: "+ rpkt.getAddress());
+		printd("Got the following bytes:\n"+byteToString(bRec)+"\n");
+		rec.byteParseFill(bRec);
+		rec.SetAddress(rpkt.getAddress());
+		rec.SetPort(rpkt.getPort());
+		
+		return rec;
+
+		
+		
+	}
 
 	
 	//Shortens the action of sending and receiving data;
@@ -149,7 +168,7 @@ public class helplib {
 			print("Error received.");
 			return !handleError(P);
 		}
-		else if(P.GetRequest() != Request) {
+		else if(P.GetRequest() != Request && Request!=0) {
 			print("Unexpected request.");
 			return false;
 		}

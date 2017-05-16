@@ -1,3 +1,4 @@
+package iteration2;
 /**
  * Client for a TFTP
  *
@@ -85,7 +86,13 @@ public class Client{
 				//Loop that transfers the file.
 				while(curBlock < numBlock){
 					rec = help.sendReceive(ack, soc, serverAddress, Port);
-					if(!help.isOkay(rec, 3)){ return; }
+					if(!help.isOkay(rec, 3)){ 				
+						if(rec.GetRequest()==4){
+							Packet ERR = new Packet(4,"Invalid packet received.");
+							help.sendPacket(ERR, soc, serverAddress, Port);
+						}
+						return;  
+					}
 					//Makes sure the packet is valid and then writes it to file.
 					if(curBlock+1==rec.GetPacketN()){ 
 						curBlock++; 
@@ -136,7 +143,12 @@ public class Client{
 			//Ready for file transfer;
 			req = new Packet(numBlock);
 			rec = help.sendReceive(req, soc, serverAddress, Port);
-			if(!help.isOkay(rec, 4)){ return; }
+			if(!help.isOkay(rec, 4)){ 
+				if(rec.GetRequest()==3){
+					Packet ERR = new Packet(4,"Invalid packet received.");
+					help.sendPacket(ERR, soc, serverAddress, Port);
+				}
+			}
 			
 			while(curBlock <= numBlock){
 				byte[] bData = help.ReadData(FIn, curBlock, Packet.DATASIZE);

@@ -1,3 +1,4 @@
+package iteration2;
 /**
  * Packet Object to avoid manually working with packets.
  *
@@ -100,6 +101,7 @@ public class Packet {
 	
 	//Byte[] to Packet converter, returns false if the packet cannot be parsed;
 	public boolean byteParseFill(byte[] input){
+		bData = input;
 		int i = 0;
 		if(input[i++]!=0) return false;
 		Req = input[i++];
@@ -124,7 +126,7 @@ public class Packet {
 			valid = true;
 		}
 		else if(Req == 5){
-			pNum = b2i(byteExtract(input,BLOCKNUMBYTESIZE,i));
+			ErrCode = b2i(byteExtract(input,BLOCKNUMBYTESIZE,i));
 			i+=2;
 			ErrMSG = strExtract(input, getNextVal(0,i,input)-i, i);
 			valid = true;
