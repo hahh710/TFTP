@@ -5,6 +5,7 @@ Adebola Shittu         100918348 - Error Simulator
 Rami Daham             100995251 - Reports and Documentation
 Vishahan Thilagakumar  100994856 - Server
 Kariharan Thiagakumar  100922048 - Client
+Hunho Ha:              100       - Debugging
 
 Documentation Files Included:
  -README - "README.md"
@@ -20,9 +21,18 @@ File Transfer Protocol
 Sending File format from the Client to the intermediate and finally 
 to the Server which in turns send back an acknowledgement
 
+
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+SETTING UP THE CLIENT , ERROR SIMULATOR AND SERVER
+a. Create a folder name client in the program directory to store the client files
+b. Create a folder name server in the program directory to store the server files
+c. Make sure there is something in the file being copied for a RRQ request
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 Client:
   * Ensure that all files are on the same machine
     If not, change the Inet Address to match the IP address of the intermediate
+  * The client support for receiving packet
+  * Recognise opcode changes
 
 
 ===================================================================
