@@ -2,19 +2,19 @@ Read Me
 
 Name: 
 Adebola Shittu         100918348 - Error Simulator
-Rami Daham             100995251 - Reports and Documentation
+Rami Daham             100995251 - Error Simulator\Reports and Documentation
 Vishahan Thilagakumar  100994856 - Server
 Kariharan Thiagakumar  100922048 - Client
-Hunho Ha:              100       - Debugging
+Huno Ha:               100868604 - Debugging
 
 Documentation Files Included:
  -README - "README.md"
- -UML    - "UML.jpeg"
+ -UML    - "UML-iteration2.png"
  -UCM    - "FileTransfer.pdf"
  
  Test Files for file transfer are:
- -"test"
- 
+ -"test.txt"
+ -"test2.txt"
  
 =====================================================================
 File Transfer Protocol
@@ -24,8 +24,8 @@ to the Server which in turns send back an acknowledgement
 
 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 SETTING UP THE CLIENT , ERROR SIMULATOR AND SERVER
-a. Create a folder name client in the program directory to store the client files
-b. Create a folder name server in the program directory to store the server files
+a. Create a folder name "client" in the program directory to store the client files
+b. Create a folder name "server" in the program directory to store the server files
 c. Make sure there is something in the file being copied for a RRQ request
 d. Select Error to implement from the simulator
 
@@ -67,14 +67,17 @@ Server:
 
 =========================================================================
 Running the Program
-Step 1:  Start the Sever 
+Step 1: Start the Sever 
 Step 2: Start the Error Simulator
 Step 3: Start the Client
 
-The client prompts the user for for the whether it is a RRQ or WRQ then 
-ask the client for the mode of Operation(Verbose or Normal).
+The client prompts the user for whether it is a RRQ or WRQ then 
+asks the client for the mode of Operation(Verbose then for using the ErrorSimulator).
 The client initiate the communication with the server through handshaking and then 
 commerce connection with the Server.
+
+Once the file transfer is done, the ErrorSimulator and the client will ask the user for
+further operations.
 
 The Error Simulator: acts as a middle man between the client and the server.
    For RRQ: Pass on the packet from the client to the server and then waits for acknowledgement 
