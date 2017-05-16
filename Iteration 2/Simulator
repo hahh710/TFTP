@@ -24,7 +24,7 @@ public class ErrorSimulator {
    private int userInput;
    private Scanner sc;
    private InetAddress address;
-   private int clientPort, index;
+   private int clientPort, serverPort, index;
    
    //Constructor for the Error Simulator class
    public ErrorSimulator()
@@ -104,7 +104,7 @@ public class ErrorSimulator {
          // Form a String from the byte array, and print the string.
          String received = new String(data,0,len);
          help.print(received);
-         
+  	   
          //Call the method to Add Error to the packet
          putError(clientReceivePacket, userInput, sendReceiveSocket, data, 69);
      
@@ -116,7 +116,7 @@ public class ErrorSimulator {
          help.print("Waiting to Receive Acknowledgement from Server");
          // Construct a DatagramPacket for receiving packets up
          // to Packet.PACKETSIZE bytes long (the length of the byte array).
-        for(;;){
+      //  for(;;){
         	
          byte[] data = new byte[Packet.PACKETSIZE];
          ServerReceivePacket = new DatagramPacket(data, data.length);
@@ -133,6 +133,8 @@ public class ErrorSimulator {
          // Process the received datagram.
          help.print("Simulator: Packet received:");
          
+         serverPort = ServerReceivePacket.getPort();
+         
          address = ServerReceivePacket.getAddress();
          help.print("From host: " + address);
          help.print("Host port: " + ServerReceivePacket.getPort());
@@ -142,15 +144,13 @@ public class ErrorSimulator {
          
          //Sending Acknowledgement to Client
          sendAckToClient(ServerReceivePacket, clientPort, address, data);
-        }// end of For loop
+       // }// end of For loop
       }
       
-      
+     
      public void sendAckToClient(DatagramPacket sendPacket, int port, InetAddress addr, byte[] data){
          // Construct a datagram packet that is to be sent to a specified port
        
-    	// errorPacket = new DatagramPacket(sendPacket, address, port);
-    	 
     	
    	     String msg = new String(sendPacket.getData());
 	  
@@ -167,9 +167,6 @@ public class ErrorSimulator {
 
          
          try {
-            // Construct a new datagram socket and bind it to any port
-            // on the local host machine. This socket will be used to
-            // send UDP Datagram packets.
             sendSocket = new DatagramSocket();
          } catch (SocketException se) {
             se.printStackTrace();
@@ -185,10 +182,7 @@ public class ErrorSimulator {
 
          help.print("Simulator: packet sent using port " + sendSocket.getLocalPort());
          help.print("");
-
-         // We're finished with this socket, so close it.
-         //sendSocket.close();
-    
+        
      } 
      
    
@@ -196,10 +190,6 @@ public class ErrorSimulator {
 	   
 	   //Putting the packet data into a String
 	   String msg = new String(newPacket.getData());
-	   
-	   // Converting the string to array
-	 //  String[] msgArray;
-	 //  System.arraycopy(msg, 0, msgArray, 0, msg.length());
 	   
 	   help.print(msg);
 	   
@@ -210,10 +200,6 @@ public class ErrorSimulator {
 	   help.print(""+ message.length);
 	   //Copying the message received into message which of type byte
 	  System.arraycopy(msg.getBytes(), 0, message, 0, msg.length());
-
-	   
-	   // Change the packet to array Characters
-	 //  char[] msgArray = msg.toCharArray();
 	   
 	   help.print("Received Packet: " + msg);
 	   
@@ -222,100 +208,129 @@ public class ErrorSimulator {
 		     //Do something
 		     help.print("No changes to Packet");	
 		   
+		     newPacket = new DatagramPacket(message, message.length, address, 69);
 			 help.print("Calling sendPacket Method Now");
-			 sendPacket(soc, newPacket, address, data, 69);
+			 sendPacket(soc, newPacket, address, data, port);
 		   break;
 		   
 	   case 1: 
 		   
-		   help.print("Changed TFTP opcode");
-		   
+		   help.print("Changing TFTP opcode\n");
+		   help.print("Original Packet: " + Arrays.toString(message));
 		   //Change RRQ to WRQ or WRQ to RRQ 
-		   if(message[1]  == '1'){
-			   message[1] = '2';
+		   if(message[1]  == 1){
+			   message[1] = 2;
 			   
-			   help.print("Whats being sent: " + message);
-			   
-			   help.print("Case 1: 1st if Sending New Packet");
+			   help.print("Opcode Changed from a RRQ to WRQ");
+			   help.print("Modified Packet: " + Arrays.toString(message) + "\n");
 			   newPacket = new DatagramPacket(message, message.length, address, 69 );
 			   sendPacket(soc, newPacket, address, data, 69);
+			   
 			   break;
-		    }else if(message[1]  == '2'){
-		    	message[1] = '1';
-		    	help.print("Case 1: 2nd if: Sending New Packet");
+		    }else if(message[1]  == 2){
+		    	message[1] = 1;
+		    	
+		    	help.print("Opcode Changed from a WRQ to RRQ");
+		    	help.print("Modified Packet: " + Arrays.toString(message)  + "\n");
+		    	
 		    	newPacket = new DatagramPacket(message, message.length, address, 69 );
 				sendPacket(soc, newPacket, address, data, 69);
+				
 		       break;   
 		    }else{		
-		    	help.print("Case 1: else: Sending New Packet");
+		    	help.print("Default Case: Change Opcode");
+		    	help.print("New Packet Received: " + Arrays.toString(message) + "\n");
+		    	
 		    	newPacket = new DatagramPacket(message, message.length, address, 69 );
 			    sendPacket(soc, newPacket, address, data, 69);
 			    break;    
 		    }
 		   
-	   case 2:		   
-		   //Replace the Filename   
-		   StringBuilder msgb = new StringBuilder();
+	   case 2:	
 		   
-		   for(int i = 1; i < msg.length() ; i++ ){
-			  if(Character.isAlphabetic(msg.charAt(i))){
-				  help.print("inside if Statement");
-				  
-				  //msgb.replace(0, i, "GF");
-				  msgb.append(" ");
-			  } 
-			  help.print("Case 2: "+ msgb);
-			  newPacket = new DatagramPacket(msg.toString().getBytes(), msg.length(), address, 69 );
+		   //Replace the Filename
+		   help.print("Original Packet: " + Arrays.toString(message));
+		   int count = 0;
+		   int j = 2;
+		   
+		   //Iterating through the byte array and replace the filename
+		   while(message[j] != 0){
+			   
+			   message[j] = 5;
+			   
+			   j++;
+		   }
+			  help.print("Removing the Filename");
+			  help.print("Modified Packet: " + Arrays.toString(message) + "\n");
+			  
+			  newPacket = new DatagramPacket(message, message.length, address, 69 );
 			  sendPacket(soc, newPacket, address, data, 69);
 			  break;
-		   }
+		   //}
 		   
 	   case 3:
 		   //Replace the Mode
-		  // StringBuilder msgb1 = new StringBuilder(msg);
-		   byte[] mode = "octet".getBytes();
-		   byte[] mode2 = "netascii".getBytes();
+		   help.print("\n"+"Changing the Original Mode to Something Else");
+		   byte[] mode =  "octettttt".getBytes();
+		   byte[] mode2 = "netasciii".getBytes();
 		   
+		   int counter = 0, k;
 		   //Find the index of 0 before mode 01Filename0Mode0
-		   for(int i = 1; i < message.length ; i++ ){
-			  if(message[i] == mode[i]){
-				  message[i] = mode2[i];
-				  help.print(""+ message[i]);
-				  help.print(""+ mode2[i]);
-			  }else{
-				  message[i] = mode[i];
-				  help.print(""+ message[i]);
-				  help.print(""+ mode[i]);
-			  }
-			  break;
+		   for(k = 0; k < message.length ; k++ ){
+			   
+			  if(message[k] == 0) {counter++;}
+			  if (counter == 2)  {break;}
 		   }
 		   
-		   help.print("case 3: Sending New Packet" + message);
+			  //Change the mode using arraycopy
+			  System.arraycopy(mode, 0, message, k+1, mode.length);
+			  
+			  //Change the byte after the mode to 0
+			  message[k+ mode.length + 2] = 0;
+			  
+		      help.print("Modified Packet: " + Arrays.toString(message));
 			  newPacket = new DatagramPacket(message, message.length, address, 69 );
 			  sendPacket(soc, newPacket, address, data, 69);
+			 
+			  break;
 	   case 4:
 		   //Change the Delimiter btw Filename and Mode to 1
-		  for(int i = 0; i<message.length; i++){
-			  if(message[i] == '0'){
-				  message[i] = '1';
-			  }
-			  break;
+		   help.print("\nChanging Delimiter between Filename and Mode");
+		   help.print("Original Packet" + Arrays.toString(message));
+		   count = 0;
+		   int i;
+		  for(i = 0; i<message.length-1; i++){
+			  if(message[i] == 0){count++;}
+              if(count == 2){ break;}
 		  }
 		  
-		   help.print("Sending New Packet");
+		  message[i] = 1;
+		  
+		      help.print("Modified Packet" + Arrays.toString(message));
 			  newPacket = new DatagramPacket(message, message.length, address, 69 );
 			  sendPacket(soc, newPacket, address, data, 69);
-			  
+			
+			  break;
 	   case 5:
 		   //Change the Delimiter to 1
-         
-		      message[message.length-1] = 1;
-		      help.print(""+ message[message.length-1]);
-		      help.print("Sending New Packet");
+		   help.print("Changing the Delimiter after Mode to 1");
+		   help.print("Original Packet" + Arrays.toString(message));
+		   
+		    count = 0;
+		   for(i = 0; i < message.length-1; i++){
+			   if(message[i] == 0){ count++; }
+			   if(count == 3){break;}
+		   }
+		      message[i] = 1;
+		     
+		      
+		      help.print("Modified Packet" + Arrays.toString(message) + "\n");
 			  newPacket = new DatagramPacket(message, message.length, address, 69 );
 			  sendPacket(soc, newPacket, address, data, 69);
+			  break;
 	   case 6: 
-		   //Change the Socket/ Invalid TID
+		   
+		   //Change the Socket Invalid TID
 		   try {
 			DatagramSocket socketb = new DatagramSocket();
 		} catch (SocketException e) {
@@ -328,21 +343,31 @@ public class ErrorSimulator {
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-		   
-		   
-		   
-		 help.print("Calling sendPacket Method Now");
 		 sendPacket(soc, newPacket, address, data, 69); 
-
-	   }
-   }
+		   
+		 break;
+	   case 7:
+		   help.print("\n Change Opcode from RRQ or WRQ to ERROR");
+		   help.print("Original Packet: " + Arrays.toString(message));
+		   if(message[1]  == 1 || message[1] == 2){
+			   message[1] = 5;
+			   
+			   help.print("New Packet: " + Arrays.toString(message) + "\n");
+			   
+			   newPacket = new DatagramPacket(message, message.length, address, 69 );
+			   sendPacket(soc, newPacket, address, data, 69);
+		   	} 
+		   break;
+	   }// End of Switch Case
+	   
+   }// End of Method
     
   // For sending Packet
   public void sendPacket(DatagramSocket soc, DatagramPacket packet, InetAddress addr, byte[] data, int port){
 	  
 	  help.print("Simulator: Inside sendPacket method: attempting to send");
 	  
-	  port = 69;
+	  //port = 69;
 	  String msg = new String(packet.getData());
 	  
 	  packet = new DatagramPacket(msg.getBytes(), msg.length(), addr, port);
@@ -381,12 +406,13 @@ public class ErrorSimulator {
 				help.print("Choose Option");
 				
 				help.print("0:   Do Nothing");
-				help.print("1:   Invalid TFTP Opcode");
-				help.print("2:   Invalid Filename");
-				help.print("3:   Invalid Mode ");
-				help.print("4:   Invalid Delimeter btw Filename and Mode");
-				help.print("5:   Invalid Delimeter after Mode");
-				help.print("6:   Port Error");
+				help.print("1:   Error Code 4: Change RRQ to WRQ or WRQ to RRQ");
+				help.print("2:   Error Code 4: Remove Filename");
+				help.print("3:   Error Code 4: Change Mode ");
+				help.print("4:   Error Code 4: Change Delimiter between Filename and Mode");
+				help.print("5:   Error Code 4: Change Delimiter after Mode");
+				help.print("6:   Error Code 5: Change Port Number");
+				help.print("7:   Error Code 4: Change RRQ or WRQ to Error");
 				
 				//Get the user input and convert to integer
 				userInput = Integer.parseInt(sc.nextLine());
@@ -404,16 +430,12 @@ public class ErrorSimulator {
 	   //After asking for input. Call the method to wait to receive
 	    passOnTFTP();
     }
-
-
+     
    public static void main( String args[] )
    {
 	   ErrorSimulator s = new ErrorSimulator();
        
 	   //call the askInput method first to ask the user for what to do
-       s.askInput();
-       
-       //s.passOnTFTP();
-       
+       s.askInput();    
    }
 }
