@@ -27,6 +27,8 @@ SETTING UP THE CLIENT , ERROR SIMULATOR AND SERVER
 a. Create a folder name client in the program directory to store the client files
 b. Create a folder name server in the program directory to store the server files
 c. Make sure there is something in the file being copied for a RRQ request
+d. Select error to implement from the simulator
+
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 Client:
   * Ensure that all files are on the same machine
