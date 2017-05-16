@@ -16,25 +16,22 @@ import java.util.*;
 
 public class ErrorSimulator {
 	
-   private helplib 		  help;
-   private Packet 		  Packet;
-   // UDP datagram packets and sockets used to send / receive
-   private DatagramPacket ServerReceivePacket, clientReceivePacket, errorPacket;
-   private DatagramSocket receiveSocket, sendSocket, sendReceiveSocket, sendSocketw;
-   private int userInput;
-   private Scanner sc;
-   private InetAddress address;
-   private int clientPort, serverPort, index;
+   private helplib 		  		help;
+   private Packet 		  		Packet;
+   private DatagramPacket 		ServerReceivePacket, clientReceivePacket;
+   private DatagramSocket		receiveSocket, sendSocket, sendReceiveSocket, sendSocketw;
+   private int 					userInput;
+   private Scanner 				sc;
+   private InetAddress 			address;
+   private int 					clientPort, serverPort;
    
    //Constructor for the Error Simulator class
    public ErrorSimulator()
-   {
-	   
+   {	   
 	   try {
 		address = InetAddress.getLocalHost();
 	    } catch (UnknownHostException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace(); 
+			e.printStackTrace();
 	    }
 	   
       try {
@@ -66,16 +63,11 @@ public class ErrorSimulator {
    }
 
    public void passOnTFTP()
-   {
-      //Loop Forever
-     // for(;;) { 
-         // Construct a DatagramPacket for receiving packets up
-         // to Packet.PACKETSIZE bytes long (the length of the byte array).
-         
+   {         
          byte[] data = new byte[Packet.PACKETSIZE];
          clientReceivePacket = new DatagramPacket(data, data.length);
 
-         help.print("Simulator: Waiting for packet.");
+         help.print("Simulator Waiting for Packet from Client");
          // Block until a datagram packet is received from receiveSocket.
          try {
             receiveSocket.receive(clientReceivePacket);
@@ -85,11 +77,8 @@ public class ErrorSimulator {
          }
 
          //Extracting the Packet Received from the Client
-         help.print("Port the data comes from"+ clientReceivePacket.getPort());
-         
-         // Process the received datagram.
-         help.print("Simulator: Packet received:");
-         help.print("From host: " + clientReceivePacket.getAddress());
+         help.print("Packet Received From Port: "+ clientReceivePacket.getPort());
+         help.print("Packet Received From Address: " + clientReceivePacket.getAddress() + "\n");
          
          //get the port it received from
          clientPort = clientReceivePacket.getPort();
@@ -205,13 +194,29 @@ public class ErrorSimulator {
 	   
 	   switch(userInput){
 	   case 0: 
-		     //Do something
-		     help.print("No changes to Packet");	
 		   
-		     newPacket = new DatagramPacket(message, message.length, address, 69);
+		     help.print("In Case 0 now");
 			 help.print("Calling sendPacket Method Now");
-			 sendPacket(soc, newPacket, address, data, port);
-		   break;
+			 sendPacket(soc, newPacket, address, data, 69);
+			/* 
+		   int counti = 0, n = 3;
+		   for(int l=0; l< n; l++){
+			   counti++;
+		   }
+		   if(counti == 2) {break;}
+		   else{			 
+			 help.print("Sending to Client after the handshake");
+			 sendPacket(soc, newPacket, address, data, clientPort);
+			 }*/
+		     //Do something
+		     help.print("Sending for the Second Time");	
+		     
+		     newPacket = new DatagramPacket(message, message.length, address, clientPort);
+			 help.print("Calling sendPacket Method Now");
+			 
+			 sendPacket(sendSocket, newPacket, address, data, clientPort);
+		  
+			 break;
 		   
 	   case 1: 
 		   
@@ -331,12 +336,13 @@ public class ErrorSimulator {
 	   case 6: 
 		   
 		   //Change the Socket Invalid TID
+		   help.print("Changing the Port");
 		   try {
 			DatagramSocket socketb = new DatagramSocket();
 		} catch (SocketException e) {
 			e.printStackTrace();
 		}		  
-		      help.print("Sending New Packet");
+		      help.print("Port Changed by Creating New Socket");
 			  newPacket = new DatagramPacket(message,message.length, address, 69);
 		try {
 			sendSocketw.send(newPacket);
@@ -346,6 +352,7 @@ public class ErrorSimulator {
 		 sendPacket(soc, newPacket, address, data, 69); 
 		   
 		 break;
+		 
 	   case 7:
 		   help.print("\n Change Opcode from RRQ or WRQ to ERROR");
 		   help.print("Original Packet: " + Arrays.toString(message));
@@ -399,11 +406,12 @@ public class ErrorSimulator {
   }
   
      public void askInput(){
+    	 
 	    try{
 		  //Prompt the User to Select what they would like to do the Packet			
 			while(true){
 				
-				help.print("Choose Option");
+				help.print("Choose Error Code to Implement");
 				
 				help.print("0:   Do Nothing");
 				help.print("1:   Error Code 4: Change RRQ to WRQ or WRQ to RRQ");
@@ -433,6 +441,7 @@ public class ErrorSimulator {
      
    public static void main( String args[] )
    {
+	   //Create an object of the error simulator
 	   ErrorSimulator s = new ErrorSimulator();
        
 	   //call the askInput method first to ask the user for what to do
