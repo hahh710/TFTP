@@ -19,7 +19,7 @@ public class ErrorSimulator {
    private helplib 		  		help;
    private Packet 		  		Packet;
    private DatagramPacket 		ServerReceivePacket, clientReceivePacket;
-   private DatagramSocket		receiveSocket, sendSocket, sendReceiveSocket, sendSocketw;
+   private DatagramSocket		receiveSocket, sendSocket, sendReceiveSocket, changesocket;
    private int 					userInput;
    private Scanner 				sc;
    private InetAddress 			address;
@@ -63,7 +63,9 @@ public class ErrorSimulator {
 
    //Method to receive packet from the client then calls the putError method
    public void passOnTFTP()
-   {         
+   {   
+	   //Infinite for loop so it comes back here to wait for Client
+	   for(;;){
          byte[] data = new byte[Packet.PACKETSIZE];
          clientReceivePacket = new DatagramPacket(data, data.length);
 
@@ -94,7 +96,8 @@ public class ErrorSimulator {
          help.print("Packet Received in String: "+ received  + "\n");
   	   
          //Call the method to Add Error to the packet
-         putError(clientReceivePacket, userInput, sendReceiveSocket, data, 69);    
+         putError(clientReceivePacket, userInput, sendReceiveSocket, data, 69);  
+	   }
    }
       
       public void receiveAckFromServer(){
@@ -308,18 +311,19 @@ public class ErrorSimulator {
 		   //Change the Socket Invalid TID
 		   help.print("Changing the Port");
 		   try {
-			   DatagramSocket socketb = new DatagramSocket();
+			   changesocket = new DatagramSocket();
 		   } catch (SocketException e) {
 			   e.printStackTrace();
 		   }		  
 		      help.print("Port Changed by Creating New Socket");
 			  newPacket = new DatagramPacket(message,message.length, address, 69);
 		try {
-			sendSocketw.send(newPacket);
+			changesocket.send(newPacket);
 		} catch (IOException e) {
+			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		 sendPacket(soc, newPacket, address, data, 69); 
+		      //sendPacket(changesocket, newPacket, address, data, 123); 
 		   
 		 break;
 		 
