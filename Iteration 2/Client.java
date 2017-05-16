@@ -1,11 +1,11 @@
 /**
  * Client for a TFTP
  *
- *Iteration 1:
- * Client asks user to make R/W request.
- * Request sent to server at port 23 and receives response.
- * Performs file operation.
- * Little to no error checking done for now.
+ *Iteration 2:
+ * Client functions more intuitively.
+ * Cleaned outputs.
+ * Now supports handling of error packets.
+ * Output locations now in separate folders.
  *      
  */
 import java.io.FileInputStream;
@@ -147,7 +147,7 @@ public class Client{
 			}
 			
 		}
-		help.print("File transfer complete!\n---------------------------------------------------------------------\n\n");
+		help.print("File transfer complete!\n--------------------------------------------------------------------------------\n\n");
 		
 	}
 	
@@ -167,17 +167,17 @@ public class Client{
 			}
 			while(running){
 				while(true){
-					System.out.println("(Temporary) Will the client be run along side an error simulator? (Y/N)?");
-					System.out.println("(Temporary) 'N' Will connect directly to port 69.");
+					System.out.println("(Temporary) Will the client be run along side an error simulator (Y/N)?");
+					System.out.println("(Temporary) 'N' Will connect directly to the server at port 69.");
 					String input = sc.nextLine();
 					if(input.toUpperCase().equals("Y")){ port=23; break;}
 					if(input.toUpperCase().equals("N")){ port=69; break;}
 					System.out.println("Invalid Mode! Select either 'Y'(Yes), 'N'(No)");
 				}
-				Client c = new Client(port, InetAddress.getLocalHost(),new java.io.File( "." ).getCanonicalPath() + "\\",verbose);
+				Client c = new Client(port, InetAddress.getLocalHost(),new java.io.File( "." ).getCanonicalPath() + "\\client\\",verbose);
 				c.begin();
 				while(true){
-					System.out.println("Would you like to run again? (Y/N)?");
+					System.out.println("Would you like to run again (Y/N)?");
 					
 					String input = sc.nextLine();
 					if(input.toUpperCase().equals("Y")){ running=true; break;}

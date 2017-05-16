@@ -1,47 +1,51 @@
 /**
- * Client for a TFTP
+ * Server for a TFTP
  *
- *Iteration 1:
- * Server class starts a ServerMaster thread and waits for user
- *   to press OK, on a displayed popup, to end ServerMaster.
- * ServerMaster continually awaits a connection at port 69.
- * ServerMaster receives connection and passes it to a
- *   WorkerHandler thats working on any request with the Client's
- *   port and address, or creates a WorkerHandler if none exist.
- * Newly created WorkerHandler starts up a ServerWorker thread,
- *   works on handling the client's request.
- * Upon ServerMaster ending, waits for all workers to complete,
- *   before closing and refuses any further connections.
+ *Iteration 2:
+ * Server outputs cleaned up and now readable.
+ * Server now checks for errors and sends response.
+ * Server updated to use Steady File Transfer protocol.
+ * Removed use of a message box to close the system,
+ *   replaced with scanner instead.
+ * Output locations now in separate folders.
+ * 
  */
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.*;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Scanner;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
-import javax.swing.*;
 
 //When program is run, server is called to create a Server Master;
 public class Server{
 	public static void main(String[] args){
 		boolean verbose;
-  	  Scanner sc = new Scanner(System.in);
-  	  while(true){
-				System.out.println("Would you like to run it in verbose mode (Y/N)?");
-				
-				String input = sc.nextLine();
-				if(input.toUpperCase().equals("Y")){ verbose=true; break;}
-				if(input.toUpperCase().equals("N")){ verbose=false; break;}
-				System.out.println("Invalid Mode! Select either 'Y'(Yes), 'N'(No)");
+	  	Scanner sc = new Scanner(System.in);
+	  	while(true){
+			System.out.println("Would you like to run it in verbose mode (Y/N)?");
+			
+			String input = sc.nextLine();
+			if(input.toUpperCase().equals("Y")){ verbose=true; break;}
+			if(input.toUpperCase().equals("N")){ verbose=false; break;}
+			System.out.println("Invalid Mode! Select either 'Y'(Yes), 'N'(No)");
 		 }
-  	 sc.close();
-		ServerMaster SM = new ServerMaster(verbose);
+	  	
+		ServerMaster SM = null;
+		try { SM = new ServerMaster(verbose,new java.io.File( "." ).getCanonicalPath() + "\\server\\");
+		} catch (IOException e) { e.printStackTrace(); }
 		SM.start();
-		JOptionPane.showMessageDialog(null, "Press 'OK' at any point to quit");
+		
+		while(true){
+			System.out.println("\nEnter 'Q' followed by 'Enter' to quit at any time.\n");
+			String input = sc.nextLine();
+			if(input.toUpperCase().equals("Q")){ break;}
+		}
+		//JOptionPane.showMessageDialog(null, "Press 'OK' at any point to quit");
 		SM.Stop();
+		sc.close();
 	}
 }
 
@@ -53,8 +57,9 @@ class ServerMaster extends Thread{
 	private boolean						verbose;
 	private boolean						running;
 	private ArrayList<WorkerHandler>	workers;
+	private String 						workingDir;
 	
-	public ServerMaster(boolean Verbose){
+	public ServerMaster(boolean Verbose, String dir){
 		//Creates a DatagramSocket
 		help = new helplib("Server", Verbose);
 		workers = new ArrayList<WorkerHandler>();
@@ -62,8 +67,9 @@ class ServerMaster extends Thread{
 		catch(SocketException se){ help.print("Failed to create socket!"); System.exit(1); }
 		System.out.println();
 		help.print("Initialized");
-		running = true;
-		verbose = Verbose;
+		running 	= true;
+		verbose 	= Verbose;
+		workingDir 	= dir;
 	}
 	//Tells the ServerMaster to quit;
 	public void Stop(){
@@ -116,7 +122,7 @@ class ServerMaster extends Thread{
 		}
 		//If the program is still running, accepts a new request;
 		if(running)
-			workers.add(new WorkerHandler(port,address,request,verbose));
+			workers.add(new WorkerHandler(port,address,request,workingDir,verbose));
 		
 	}
 }
@@ -127,14 +133,18 @@ class WorkerHandler{
 	public InetAddress address;
 	private ServerWorker worker;
 	private BlockingQueue<Packet> bQueue;
+	private String workingDir;
 	
 	//Constructor for worker;
-	public WorkerHandler(int Port, InetAddress clientAddress, Packet request, boolean verbose){
-		bQueue 	= new ArrayBlockingQueue<Packet>(10);
-		port	= Port;
-		address = clientAddress;
-		worker 	= new ServerWorker(Port,clientAddress,request,verbose,bQueue);
+	public WorkerHandler(int Port, InetAddress clientAddress, Packet request, String dir, boolean verbose){
+		bQueue 		= new ArrayBlockingQueue<Packet>(10);
+		port		= Port;
+		address 	= clientAddress;
+		workingDir 	= dir;
+		worker 		= new ServerWorker(Port,clientAddress,request,verbose,workingDir,bQueue);
+		
 		worker.start();
+		
 	}
 	
 	//Wait for ServerWorker Thread to complete;
@@ -158,23 +168,24 @@ class WorkerHandler{
 
 //Worker thread that handles a client request;
 class ServerWorker extends Thread{
-	int port;
-	InetAddress address;
-	Packet mainReq;
-	DatagramSocket soc;
-	helplib help;
+	private int port;
+	private InetAddress address;
+	private Packet mainReq;
+	private DatagramSocket soc;
+	private helplib help;
+	private String workingDir;
 	private BlockingQueue<Packet> bQueue;
 	
 	//Constructor;
-	public ServerWorker(int Port, InetAddress clientAddress, Packet request, boolean verbose, BlockingQueue<Packet> Queue){
-		port 	= Port;
-		address = clientAddress;
-		mainReq = request;
-		bQueue 	= Queue;
-		help	= new helplib("ServerWorker@"+Port, verbose);
-		help.print("\nWorker created to handle the request:\n"+request);
-		help.print("\nFrom:\nPort:    "+port+"\nAddress: "+ address);
-		help.print("");
+	public ServerWorker(int Port, InetAddress clientAddress, Packet request, boolean verbose, String dir, BlockingQueue<Packet> Queue){
+		port 		= Port;
+		address 	= clientAddress;
+		mainReq 	= request;
+		bQueue 		= Queue;
+		workingDir 	= dir;
+		help		= new helplib("ServerWorker@"+Port, verbose);
+		help.print("\n--------------------------------------------------------------------------------\nWorker created to handle the request:\n"+request+"\n");
+		help.print("\nFrom the location:\nPort:    "+port+"\nAddress: "+ address + "\n");
 		try{ soc = new DatagramSocket(); } 
 		catch(SocketException se){ help.print("Failed to create Socket."); System.exit(1); }
 	}
@@ -190,7 +201,7 @@ class ServerWorker extends Thread{
 		}
 		if(mainReq.GetRequest()==1){
 			//Read request;
-			FileInputStream FIn = help.OpenIFile(mainReq.GetFile());
+			FileInputStream FIn = help.OpenIFile(workingDir+mainReq.GetFile());
 			if(FIn==null){ System.exit(1); }
 			int numBlock = 0;
 			int curBlock = 0;
@@ -231,7 +242,7 @@ class ServerWorker extends Thread{
 		}
 		else{
 			//Write Request
-			FileOutputStream FOut = help.OpenOFile(mainReq.GetFile(), true);
+			FileOutputStream FOut = help.OpenOFile(workingDir+mainReq.GetFile(), true);
 			Packet ack = new Packet(0);
 			help.sendPacket(ack, soc, address, port);
 			Packet rec = recurreceive(soc);
@@ -248,7 +259,7 @@ class ServerWorker extends Thread{
 			help.sendPacket(ack, soc, address, port);
 			while(curBlock < numBlock){
 				rec = recurreceive(soc);
-				if(!help.isOkay(rec, 4)){ 
+				if(!help.isOkay(rec, 3)){ 
 					Packet ERR = new Packet(4,"Invalid packet received.");
 					help.sendPacket(ERR, soc, address, port);
 					soc.close();
@@ -270,7 +281,7 @@ class ServerWorker extends Thread{
 			}
 			try { FOut.close(); } catch (IOException e) { e.printStackTrace(); }
 		}
-		help.print("File transfer complete! Worker thread closing.");
+		help.print("File transfer complete! Worker thread closing.\n--------------------------------------------------------------------------------\n\n");
 	}
 	
 	/*//Gets a packet from the parent WorkerHandler.
