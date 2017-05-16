@@ -85,17 +85,18 @@ public class Packet {
 	
 	//toString overload
 	public String toString() {
-		String r = Req2Str() + ":: ";
+		String r = Req2Str() + " - ";
 		if(Req==1||Req==2)
-			r += "FILE: '" + File + "' | MODE: '" + Mode+"'";
+			r +="FILE: '" + File + "' MODE: '" + Mode+"'";
 		else if(Req==3)
-			r += "BLOCK: " + pNum + "| CONTAINING: " + Arrays.toString(bData);
+			r += "BLOCK: " + pNum;
 		else if(Req==4)
 			r += "BLOCK: " + pNum;
 		else if(Req==5)
 			r += ErrCode + " : " + ErrMSG;
 		return r;
 	}
+	
 	
 	//Byte[] to Packet converter, returns false if the packet cannot be parsed;
 	public boolean byteParseFill(byte[] input){

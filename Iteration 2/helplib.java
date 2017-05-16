@@ -96,7 +96,7 @@ public class helplib {
 			byte[] bReq = p.toBytes();
 			DatagramPacket spkt = new DatagramPacket(bReq, bReq.length, addr, port);
 			soc.send(spkt);
-			printd("Sent the packet:\n"+p+"\nWith the following bytes:\n"+Arrays.toString(bReq));
+			printd("\nSent the packet: "+p+"\nWith the following bytes:\n"+byteToString(bReq)+"\n");
 		}
 		catch (Exception e) { e.printStackTrace(); System.exit(1); }
 	}
@@ -107,7 +107,7 @@ public class helplib {
 			byte[] bRec = new byte[Packet.PACKETSIZE];
 			DatagramPacket rpkt = new DatagramPacket(bRec,bRec.length);
 			soc.receive(rpkt);
-			printd("Got the following bytes:\n"+Arrays.toString(bRec));
+			printd("Got the following bytes:\n"+byteToString(bRec));
 			return bRec;
 		}
 		catch (Exception e) { e.printStackTrace(); System.exit(1); }
@@ -122,7 +122,7 @@ public class helplib {
 			DatagramPacket rpkt = new DatagramPacket(bRec,bRec.length);
 			soc.receive(rpkt);
 			printd("Packet received from:\nPort:    "+rpkt.getPort()+"\nAddress: "+ rpkt.getAddress());
-			printd("Got the following bytes:\n"+Arrays.toString(bRec));
+			printd("Got the following bytes:\n"+byteToString(bRec)+"\n");
 			rec.byteParseFill(bRec);
 			rec.SetAddress(rpkt.getAddress());
 			rec.SetPort(rpkt.getPort());
@@ -138,7 +138,7 @@ public class helplib {
 		sendPacket(p, soc, addr, port);
 		printd("Awaiting response...");
 		Packet rec = recievePacket(soc);
-		printd("Bytes parsed into following Packet:\n"+rec);
+		printd("Bytes parsed into following Packet: "+rec+"\n");
 		return rec;
 	}
 
@@ -169,4 +169,42 @@ public class helplib {
 		return false;
 	}
 	
+	//For ease of sight, print data but avoid duplicating too many 0s without losing actual message
+	public String byteToString(byte[] arr){
+		String res = "";
+		int i = 0;
+		int j = 0;
+		for(i = 0; i < 4; i++){
+			if      (arr[i]<10 ) res+= "  ";
+			else if (arr[i]<100) res+=  " ";
+			res+=arr[i]+", ";
+			j++;
+			if(j==16){ j=0; res+="\n"; }
+		}
+		for(i = 4; i < arr.length; i++){
+			if(arr[i]==arr[i-1]&&arr[i]==0){}
+			else{
+				if      (arr[i]<10 ) res+= "  ";
+				else if (arr[i]<100) res+=  " ";
+				res+=arr[i]+", ";
+				j++;
+			}
+			if(j==16){ j=0; res+="\n"; }
+		}
+		return res;
+	}
+	
+	public String byteToStringW0(byte[] arr){
+		String res = "";
+		int i = 0;
+		int j = 0;
+		for(i = 0; i < arr.length; i++){
+			if      (arr[i]<10 ) res+= "  ";
+			else if (arr[i]<100) res+=  " ";
+			res+=arr[i]+", ";
+			j++;
+			if(j==16){ j=0; res+="\n"; }
+		}
+		return res;
+	}
 }

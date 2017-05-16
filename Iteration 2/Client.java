@@ -66,7 +66,6 @@ public class Client{
 			
 			//Attempt to handshake with the server to get the size of the file from the server;
 			//Send the request.
-			System.out.println();
 			help.print("Attempting request...");
 			
 			Packet req = new Packet(1, sendFile, "netascii");
@@ -103,8 +102,6 @@ public class Client{
 				ack = help.sendReceive(ack, soc, serverAddress, Port);
 			}
 			catch (Exception e) { e.printStackTrace(); System.exit(1); }
-			System.out.println();
-			help.print("File transfer complete!");
 			try { FOut.close(); } catch (IOException e) { e.printStackTrace(); }
 		}
 		else{
@@ -149,14 +146,16 @@ public class Client{
 				curBlock++;
 			}
 			
-			help.print("File transfer complete!");
 		}
-		sc2.close();
+		help.print("File transfer complete!\n---------------------------------------------------------------------\n\n");
+		
 	}
 	
 	public static void main(String[] args){
 		try {
 			boolean verbose;
+			int     port;
+			boolean running = true;
 			Scanner sc = new Scanner(System.in);
 			while(true){
 				System.out.println("Would you like to run it in verbose mode (Y/N)?");
@@ -166,8 +165,27 @@ public class Client{
 				if(input.toUpperCase().equals("N")){ verbose=false; break;}
 				System.out.println("Invalid Mode! Select either 'Y'(Yes), 'N'(No)");
 			}
-			Client c = new Client(23, InetAddress.getLocalHost(),new java.io.File( "." ).getCanonicalPath() + "\\",verbose);
-			c.begin();
+			while(running){
+				while(true){
+					System.out.println("(Temporary) Will the client be run along side an error simulator? (Y/N)?");
+					System.out.println("(Temporary) 'N' Will connect directly to port 69.");
+					String input = sc.nextLine();
+					if(input.toUpperCase().equals("Y")){ port=23; break;}
+					if(input.toUpperCase().equals("N")){ port=69; break;}
+					System.out.println("Invalid Mode! Select either 'Y'(Yes), 'N'(No)");
+				}
+				Client c = new Client(port, InetAddress.getLocalHost(),new java.io.File( "." ).getCanonicalPath() + "\\",verbose);
+				c.begin();
+				while(true){
+					System.out.println("Would you like to run again? (Y/N)?");
+					
+					String input = sc.nextLine();
+					if(input.toUpperCase().equals("Y")){ running=true; break;}
+					if(input.toUpperCase().equals("N")){ running=false; break;}
+					System.out.println("Invalid Mode! Select either 'Y'(Yes), 'N'(No)");
+				}
+				System.out.println();
+			}
 			sc.close();
 		} catch (Exception e) { e.printStackTrace(); }
 		

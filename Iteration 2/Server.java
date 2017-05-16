@@ -47,12 +47,12 @@ public class Server{
 
 //ServerMaster, awaits for connection and passes on to WorkerHandler;
 class ServerMaster extends Thread{
-	private DatagramPacket  		rpkt;
-	private DatagramSocket 			soc;
-	private helplib 				help;
-	private boolean					verbose;
-	private boolean					running;
-	private ArrayList<WorkerHandler> workers;
+	private DatagramPacket  			rpkt;
+	private DatagramSocket 				soc;
+	private helplib 					help;
+	private boolean						verbose;
+	private boolean						running;
+	private ArrayList<WorkerHandler>	workers;
 	
 	public ServerMaster(boolean Verbose){
 		//Creates a DatagramSocket
@@ -60,6 +60,7 @@ class ServerMaster extends Thread{
 		workers = new ArrayList<WorkerHandler>();
 		try{ soc = new DatagramSocket(69); } 
 		catch(SocketException se){ help.print("Failed to create socket!"); System.exit(1); }
+		System.out.println();
 		help.print("Initialized");
 		running = true;
 		verbose = Verbose;
@@ -80,7 +81,8 @@ class ServerMaster extends Thread{
 				soc.receive(rpkt);
 				//If server times out, the following part is skipped;
 				help.print("Got a connection, deligating to worker.");
-				help.printd("The bytes recieved are:\n"+ Arrays.toString(rec));
+				System.out.println();
+				help.printd("The bytes recieved are:\n"+ help.byteToString(rec));
 				handlePacket(new Packet(rec),rpkt.getPort(),rpkt.getAddress());
 			} catch (IOException e) 
 			{ 
@@ -170,14 +172,16 @@ class ServerWorker extends Thread{
 		mainReq = request;
 		bQueue 	= Queue;
 		help	= new helplib("ServerWorker@"+Port, verbose);
-		help.print("Worker created to handle the request:\n"+request);
-		help.print("From:\nPort:    "+port+"\nAddress: "+ address);
+		help.print("\nWorker created to handle the request:\n"+request);
+		help.print("\nFrom:\nPort:    "+port+"\nAddress: "+ address);
+		help.print("");
 		try{ soc = new DatagramSocket(); } 
 		catch(SocketException se){ help.print("Failed to create Socket."); System.exit(1); }
 	}
 	
 	//Main ServerWorker logic;
 	public void run(){
+		System.out.println();
 		if(!mainReq.GetMode().equals("netascii")){
 			Packet ack = new Packet(4,"Invalid file mode");
 			help.sendPacket(ack, soc, address, port);
@@ -224,7 +228,6 @@ class ServerWorker extends Thread{
 			ack = new Packet(curBlock);
 			help.sendPacket(ack, soc, address, port);
 			try { FIn.close(); } catch (IOException e) { e.printStackTrace(); }
-			help.print("File transfer complete!");
 		}
 		else{
 			//Write Request
@@ -266,9 +269,8 @@ class ServerWorker extends Thread{
 				help.sendPacket(ack, soc, address, port);
 			}
 			try { FOut.close(); } catch (IOException e) { e.printStackTrace(); }
-			help.print("File transfer complete!");
 		}
-		
+		help.print("File transfer complete! Worker thread closing.");
 	}
 	
 	/*//Gets a packet from the parent WorkerHandler.
