@@ -11,7 +11,9 @@
  * Output locations now in separate folders.
  * 
  */
+import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.*;
@@ -20,10 +22,17 @@ import java.util.Scanner;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 
+import javax.swing.*;
+
 //When program is run, server is called to create a Server Master;
 public class Server{
 	public static void main(String[] args){
 		boolean verbose;
+		boolean changePath;
+		String 	path = "";
+		try { path = new java.io.File( "." ).getCanonicalPath() + "\\server\\";
+		} catch (IOException e) { e.printStackTrace(); }
+		
 	  	Scanner sc = new Scanner(System.in);
 	  	while(true){
 			System.out.println("Would you like to run it in verbose mode (Y/N)?");
@@ -32,11 +41,36 @@ public class Server{
 			if(input.toUpperCase().equals("Y")){ verbose=true; break;}
 			if(input.toUpperCase().equals("N")){ verbose=false; break;}
 			System.out.println("Invalid Mode! Select either 'Y'(Yes), 'N'(No)");
+		}
+	  	
+	  	while(true){
+			System.out.println("Do you wish to change working director (Y/N)?\nCurrently set to the following path: \n"+path);
+			
+			String input = sc.nextLine();
+			if(input.toUpperCase().equals("Y")){ changePath=true;  break;}
+			if(input.toUpperCase().equals("N")){ changePath=false; break;}
+			System.out.println("Invalid Mode! Select either 'Y'(Yes), 'N'(No)");
 		 }
+	  	if(changePath){
+	  		while(true){
+				System.out.println("Please enter a new directory for the server:");
+				
+				String input = sc.nextLine();
+				input = input.trim();
+				File f = new File(input);
+				if(f.exists() && f.isDirectory()){ 
+					path=input;  
+					if(path.substring(path.length() - 1).equals("\\")) {}
+					else path+="\\";
+					System.out.println("Directory set to:\n"+path);
+					break;
+				}
+				System.out.println("Invalid directory! Please try again...");
+	  		}
+	  	}
 	  	
 		ServerMaster SM = null;
-		try { SM = new ServerMaster(verbose,new java.io.File( "." ).getCanonicalPath() + "\\server\\");
-		} catch (IOException e) { e.printStackTrace(); }
+		SM = new ServerMaster(verbose,path);
 		SM.start();
 		
 		while(true){
@@ -208,7 +242,27 @@ class ServerWorker extends Thread{
 		}
 		if(mainReq.GetRequest()==1){
 			//Read request;
-			FileInputStream FIn = help.OpenIFile(workingDir+mainReq.GetFile());
+			
+			//Open file for reading;
+			File file = new File(workingDir+mainReq.GetFile());
+			FileInputStream FIn = null;
+			try { 
+				FIn = new FileInputStream(file);
+			} catch (FileNotFoundException e) {
+				help.print("FileIO::ERROR::File not found. "+ workingDir+mainReq.GetFile());
+				Packet ERR = new Packet(1,"File not found.");
+				help.sendPacket(ERR, soc, address, port);
+				soc.close();
+				return; 
+			} catch (SecurityException e){
+				help.print("FileIO::ERROR::Access Violation.");
+				Packet ERR = new Packet(2,"Access Violation.");
+				help.sendPacket(ERR, soc, address, port);
+				soc.close();
+				return; 
+			}
+			//Done opening file.
+			
 			if(FIn==null){ System.exit(1); }
 			int numBlock = 0;
 			int curBlock = 0;
@@ -249,7 +303,29 @@ class ServerWorker extends Thread{
 		}
 		else{
 			//Write Request
-			FileOutputStream FOut = help.OpenOFile(workingDir+mainReq.GetFile(), true);
+			long usableSpace = new File(workingDir).getUsableSpace();
+			
+			FileOutputStream FOut = null;
+			File dir = new File(workingDir+mainReq.GetFile());
+			
+			if(!dir.exists() ){
+				try { dir.createNewFile(); } 
+				catch (IOException e) {  }
+			}
+			else{
+				help.print("FileIO::ERROR::File Already Exists.");
+				Packet ERR = new Packet(6,"File Already Exists.");
+				help.sendPacket(ERR, soc, address, port);
+				soc.close();
+				return; 
+			}
+			try { 
+				FOut = new FileOutputStream(dir,true);
+			} catch (FileNotFoundException e) {
+				//The thread should just quit if it somehow comes to this.
+				e.printStackTrace(); return;
+			}
+			
 			Packet ack = new Packet(0);
 			help.sendPacket(ack, soc, address, port);
 			Packet rec = recurreceive(soc);
@@ -257,11 +333,24 @@ class ServerWorker extends Thread{
 				Packet ERR = new Packet(4,"Invalid packet received.");
 				help.sendPacket(ERR, soc, address, port);
 				soc.close();
+				try { FOut.close(); } catch (IOException e) { e.printStackTrace(); }
 				return; 
 			}
 			
 			int numBlock = rec.GetPacketN();
 			int curBlock = -1;
+			
+			//Check if file is larger than the free space;
+			if(numBlock*Packet.DATASIZE>usableSpace){
+				help.print("FileIO::ERROR::Disk full or allocation exceeded.");
+				Packet ERR = new Packet(3,"Disk full or allocation exceeded.");
+				help.sendPacket(ERR, soc, address, port);
+				soc.close();
+				try { FOut.close(); } catch (IOException e) { e.printStackTrace(); }
+				return; 
+			}
+			
+			
 			ack = new Packet(0);
 			help.sendPacket(ack, soc, address, port);
 			while(curBlock < numBlock){
@@ -270,6 +359,7 @@ class ServerWorker extends Thread{
 					Packet ERR = new Packet(4,"Invalid packet received.");
 					help.sendPacket(ERR, soc, address, port);
 					soc.close();
+					try { FOut.close(); } catch (IOException e) { e.printStackTrace(); }
 					return; 
 				}
 				

@@ -31,6 +31,7 @@ public class helplib {
 		} catch (FileNotFoundException e) {
 			print("FileIO::ERROR::File not found. "+ path); return null; 
 		}
+		
 	}
 	public FileOutputStream OpenOFile(String path, boolean notExist){
 		File dir = new File(path);
