@@ -136,16 +136,11 @@ public class ErrorSimulator {
 		   
 		   // Data received
 		   byte[] data = newPacket.GetData();
-		   byte[] mode = Packet.GetMode().getBytes();
-		   byte[] fileName = Packet.GetFile().getBytes();
 		   
 		   // Putting the packet data into a String
 		   String msg = new String(data);
 		   
 		   help.print("Received Packet Length: "+ msg.length() + "\n");
-		   
-		   //used for cases 2 and 3
-		   byte[] newData;
 		   
 		   switch(userInput){
 		   case 0: 
@@ -185,12 +180,13 @@ public class ErrorSimulator {
 			   help.print("Original Packet: " + Arrays.toString(data));
 			   
 			   //remove filename
-			   newData = new byte[3 + mode.length];
+			   byte[] newData = new byte[Packet.PACKETSIZE];
 			   newData[0] = data[0];
 			   newData[1] = data[1];
 			   newData[2] = 0;
+			   byte[] mode = Packet.GetMode().getBytes();
 			   System.arraycopy(mode, 0, newData, 3, mode.length);
-			   newData[2 + mode.length] = 0;
+			   newData[3 + mode.length] = 0;
 			   
 			   // New Packet
 			   help.print("Modified Packet: " + Arrays.toString(newData) + "\n");
@@ -215,18 +211,16 @@ public class ErrorSimulator {
 			   }
 			   
 			   //Change the mode using arraycopy
-			   newData = new byte[data.length + mod.length];
-			   System.arraycopy(data, 0, newData, 0, 2 + fileName.length);
-			   System.arraycopy(mod, 0, newData, k + 1, mod.length);
+			   System.arraycopy(mod, 0, data, k + 1, mod.length);
 				  
 			   //Change the byte after the mode to 0
-			   newData[newData.length - 1] = 0;
+			   data[k+ mod.length + 2] = 0;
 				  
 			   // New Packet
 			   help.print("Modified Packet: " + Arrays.toString(data));
 			      
 			   // Send Packet to Server
-	           Packet = new Packet(newData);
+	           Packet = new Packet(data);
 			   help.sendPacket(Packet, soc, address, port);
 				 
 			   break;
