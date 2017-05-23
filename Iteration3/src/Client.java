@@ -180,8 +180,8 @@ public class Client{
 			}
 			while(running){
 				while(true){
-					System.out.println("(Temporary) Will the client be run along side an error simulator (Y/N)?");
-					System.out.println("(Temporary) 'N' Will connect directly to the server at port 69.");
+					System.out.println("Will the client be run along side an error simulator (Y/N)?");
+					System.out.println("('N' Will connect directly to the server at port 69.)");
 					String input = sc.nextLine();
 					if(input.toUpperCase().equals("Y")){ port=23; break;}
 					if(input.toUpperCase().equals("N")){ port=69; break;}
