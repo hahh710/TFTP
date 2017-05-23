@@ -248,15 +248,22 @@ class ServerWorker extends Thread{
 			FileInputStream FIn = null;
 			try { 
 				FIn = new FileInputStream(file);
-			} catch (FileNotFoundException e) {
-				help.print("FileIO::ERROR::File not found. "+ workingDir+mainReq.GetFile());
-				Packet ERR = new Packet(1,"File not found.");
-				help.sendPacket(ERR, soc, address, port);
-				soc.close();
-				return; 
 			} catch (SecurityException e){
 				help.print("FileIO::ERROR::Access Violation.");
 				Packet ERR = new Packet(2,"Access Violation.");
+				help.sendPacket(ERR, soc, address, port);
+				soc.close();
+				return; 
+			} catch (FileNotFoundException e) {
+				if(file.exists()){
+					help.print("FileIO::ERROR::Access Violation.");
+					Packet ERR = new Packet(2,"Access Violation.");
+					help.sendPacket(ERR, soc, address, port);
+					soc.close();
+					return; 
+				}
+				help.print("FileIO::ERROR::File not found. "+ workingDir+mainReq.GetFile());
+				Packet ERR = new Packet(1,"File not found.");
 				help.sendPacket(ERR, soc, address, port);
 				soc.close();
 				return; 

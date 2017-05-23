@@ -148,6 +148,7 @@ public class Client{
 					Packet ERR = new Packet(4,"Invalid packet received.");
 					help.sendPacket(ERR, soc, serverAddress, Port);
 				}
+				return;
 			}
 			
 			while(curBlock <= numBlock){
