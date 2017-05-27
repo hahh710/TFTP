@@ -12,11 +12,10 @@ import java.util.Scanner;
 public class ErrorSimulator {
 	   private helplib 		  		help;
 	   private Packet 		  		Packet;
-	   private DatagramPacket 		serverReceivePacket, clientReceivePacket;
 	   private DatagramSocket		receiveSocket, sendSocket, sendReceiveSocket, changeSocket;		
-	   private Scanner 				sc;
+	   private static Scanner 		sc;
 	   private InetAddress 			address;
-	   private int 					clientPort, serverPort, userInput, totalBlocks, currentBlock;
+	   private int 					clientPort, serverPort, userInput, Req, packetNumber;
 	   private boolean				transferringFile;
 	   
 	   public ErrorSimulator(boolean verbose){
@@ -58,14 +57,14 @@ public class ErrorSimulator {
 			   }else{
 				   try{
 					 Packet = help.recievePacket(sendSocket,500);
-					} catch (IOException e) 
-					{ 
-						help.print("No response from client, assuming client completed.");
-						sendSocket.close();
-						receiveSocket.close();
-						sendReceiveSocket.close();
-						return;
-					}
+				   } catch (IOException e) {
+					   help.print("No response from client, assuming client completed.");
+					   transferringFile = false;
+					   sendSocket.close();
+					   receiveSocket.close();
+					   sendReceiveSocket.close();
+					   return;
+				   }
 			   }
 			   
 			   // Extracting the Packet Received from the Client
@@ -86,14 +85,14 @@ public class ErrorSimulator {
 		       String received = new String(data,0,len);
 		       help.print("Packet Received in String: "+ received  + "\n");
 		       
-		       
-		       if(!isTransferringFile() && userInput < 6 && userInput > -1){
+		       // server sees them as being sent by the client
+		       if(!isTransferringFile() && userInput < 7 && userInput > -1){
 		    	   putError(Packet, userInput, sendReceiveSocket, 69);
-		    	   userInput = -1;
-		       }else if(isTransferringFile() && userInput == 6){
+		       }else if(Packet.GetRequest() == 3 && userInput == 7){ // DATA packet
+		    	   putError(Packet, userInput, sendReceiveSocket, serverPort);
+		       }else if(isTransferringFile() && userInput == 8){
 		    	   Packet p = Packet;
 		    	   putError(Packet, userInput, sendReceiveSocket, serverPort);
-		    	   userInput = -1;
 		    	   help.sendPacket(p, sendReceiveSocket, address, serverPort);
 		       }else if (!isTransferringFile()){
 		    	   help.sendPacket(Packet, sendReceiveSocket, address, 69);
@@ -119,15 +118,22 @@ public class ErrorSimulator {
 		       
 		       // Send Packet received to client
 		       help.print("\nSend Packet received from Server to the Client");
-		       help.sendPacket(Packet, sendSocket, address, clientPort);
 		       
-		       if( Packet.GetErrCode() != 5){
-		    	   transferringFile = true;
+		       // client sees them as being sent by the server
+		       if(Packet.GetRequest() == 3 && userInput == 7) { // DATA packet
+		    	   putError(Packet, userInput, sendSocket, clientPort);
+		       }else if(isTransferringFile() && userInput == 8){
+		    	   Packet p = Packet;
+		    	   putError(Packet, userInput, sendSocket, clientPort);
+		    	   userInput = -1;
+		    	   help.sendPacket(p, sendSocket, address, clientPort);
 		       }else{
-		    	   transferringFile = false;
-		    	   passOnTFTP();
+		    	   help.sendPacket(Packet, sendSocket, address, clientPort);
 		       }
 		       
+		       if(!isTransferringFile()){
+		    	   transferringFile = true;
+		       }
 		   }
 	   }
 	   
@@ -136,13 +142,13 @@ public class ErrorSimulator {
 		   
 		   // Data received
 		   byte[] data = newPacket.GetData();
-		   byte[] mode = Packet.GetMode().getBytes();
-		   byte[] fileName = Packet.GetFile().getBytes();
+		   byte[] mode = newPacket.GetMode().getBytes();
+		   byte[] fileName = newPacket.GetFile().getBytes();
 		   
 		   // Putting the packet data into a String
 		   String msg = new String(data);
 		   
-		   help.print("Received Packet Length: "+ msg.length() + "\n");
+		   help.print("\nReceived Packet Length: "+ msg.length() + "\n");
 		   
 		   //used for cases 2 and 3
 		   byte[] newData;
@@ -150,17 +156,20 @@ public class ErrorSimulator {
 		   switch(userInput){
 		   case 0: 
 			   
-			   help.print("Sending unchanged Request to Server to establish a connection");
-			   help.print("Packet Received in Bytes: " + Arrays.toString(data));
+			   help.print("\nSending unchanged Request to Server to establish a connection");
+			   help.print("Packet Received in Bytes: " + msg);
 			   
+			   //forward the packet received
 			   help.sendPacket(newPacket, soc, address, port);
+			   
+			   this.userInput = -1;
 			   
 			   break;	
 			   
 		   case 1: // Change opcode
 			   
-			   help.print("Changing TFTP opcode\n");
-			   help.print("Original Packet: " + Arrays.toString(data));
+			   help.print("\nChanging TFTP opcode\n");
+			   help.print("Original Packet: " + msg);
 			   
 			   //Change RRQ to WRQ or WRQ to RRQ 
 			   if(data[1]  == 1){
@@ -177,12 +186,32 @@ public class ErrorSimulator {
 			   // Send Packet to Server
 			   Packet = new Packet(data);
 			   help.sendPacket(Packet, soc, address, port);
+			   
+			   this.userInput = -1;
+			   
 			   break;
 			   
-		   case 2:	//Replace the Filename
+		   case 2: // change from RRQ/WRQ to an invalid request
 			   
-			   help.print("Removing filename");
-			   help.print("Original Packet: " + Arrays.toString(data));
+			   help.print("\nChanging request opcode to an invalid opcode");
+			   help.print("Original Packet: " + msg);
+			   
+			   //change opcode to an invalid opcode
+			   data[1] = 9;
+			   help.print("Modified Packet: " + Arrays.toString(data) + "\n");
+			   
+			   //send new data to server
+			   Packet = new Packet(data);
+			   help.sendPacket(Packet, soc, address, port);
+			   
+			   this.userInput = -1;
+			   
+			   break;
+			   
+		   case 3:	//Replace the Filename
+			   
+			   help.print("\nRemoving filename");
+			   help.print("Original Packet: " + msg);
 			   
 			   //remove filename
 			   newData = new byte[3 + mode.length];
@@ -199,11 +228,15 @@ public class ErrorSimulator {
 			   Packet = new Packet(newData);
 			   help.sendPacket(Packet, soc, address, port);
 			   
+			   this.userInput = -1;
+			   
 			   break;
 			   
-		   case 3: //Replace the Mode
+		   case 4: //Replace the Mode
 			   
-			   help.print("\n"+"Changing the Original Mode to Something Else");
+			   help.print("\nChanging the Original Mode to Something Else");
+			   help.print("Original Packet: " + msg);
+			   
 			   byte[] mod =  "octettttt".getBytes();
 			   
 			   int counter = 0, k;
@@ -228,13 +261,15 @@ public class ErrorSimulator {
 			   // Send Packet to Server
 	           Packet = new Packet(newData);
 			   help.sendPacket(Packet, soc, address, port);
-				 
+			   
+			   this.userInput = -1;
+			   
 			   break;
 			   
-		   case 4: //Change the Delimiter between Filename and Mode to 1
+		   case 5: // Change the Delimiter between Filename and Mode to 1
 			   
 			   help.print("\nChanging Delimiter between Filename and Mode");
-			   help.print("Original Packet" + Arrays.toString(data));
+			   help.print("Original Packet" + msg);
 			   
 			   // Modify Packet
 			   int count = 0;
@@ -253,12 +288,14 @@ public class ErrorSimulator {
 	           Packet = new Packet(data);
 			   help.sendPacket(Packet, soc, address, port);
 				
+			   this.userInput = -1;
+			   
 			   break;
 			   
-		   case 5:	//Change the Delimiter to 1
+		   case 6:	// Change the Delimiter to 1
 			   
-			   help.print("Changing the Delimiter after Mode to 1");
-			   help.print("Original Packet" + Arrays.toString(data));
+			   help.print("\nChanging the Delimiter after Mode to 1");
+			   help.print("Original Packet" + msg);
 			   
 			   // Modify Packet
 			   count = 0;
@@ -276,11 +313,34 @@ public class ErrorSimulator {
 	           Packet = new Packet(data);
 			   help.sendPacket(Packet, soc, address, port);
 			   
+			   this.userInput = -1;
+			   
+			   break;
+			   
+		   case 7: // change DATA size to be greater than 512b
+			   
+			   help.print("\nChanging data size to be greater than 512b");
+			   
+			   //change DATA size
+			   newData = new byte[514];
+			   System.arraycopy(data, 0, newData, 0, data.length);
+			   newData[newData.length - 1] = 0;
+			   newData[newData.length - 2] = 1;
+			   
+			   // New Packet  
+			   Packet = new Packet(newPacket.GetPacketN(), newData);
+			   help.print("Modified Packet" + Arrays.toString(Packet.GetData()) + "\n");
+			   
+			   //send Packet to server
+			   help.sendPacket(Packet, soc, address, port);
+			   
+			   this.userInput = -1;
+			   
 			   break;
 		   
-		   case 6: //Change the Socket Invalid TID
+		   case 8: // Change the Socket Invalid TID and send to the server.
 			   
-			   help.print("Changing the Port");
+			   help.print("\nChanging the Port");
 			   try {
 				   changeSocket = new DatagramSocket();
 			   } catch (SocketException e) {
@@ -289,8 +349,14 @@ public class ErrorSimulator {
 			   
 			   help.print("Port Changed by Creating New Socket");
 			   
-			   // Send Packet through a new port to the server 
-			   help.sendPacket(Packet, changeSocket, address, serverPort);
+			   // Send Packet through a new port to the server or client 
+			   if(port == clientPort){
+				   help.print("Send to client through an invalid TID");
+			   }else{
+				   help.print("Send to server through an invalid TID");
+			   }
+			   
+			   help.sendPacket(Packet, changeSocket, address, port);
 			   
 			   // Receive Packet from server 
 			   Packet = help.recievePacket(changeSocket);
@@ -302,7 +368,7 @@ public class ErrorSimulator {
 		       help.print("Packet Received in Bytes: " + Arrays.toString(Packet.GetData()));
 		       help.print("Error Code : " + Packet.GetErrCode());
 		       help.print("Error Message: " + Packet.GetErrMSG());
-		      
+		       
 			   break;
 		   }
 		   
@@ -320,18 +386,20 @@ public class ErrorSimulator {
 				   
 				   help.print("0:   Do Nothing");
 				   help.print("1:   Error Code 4: Change RRQ to WRQ or WRQ to RRQ");
-				   help.print("2:   Error Code 4: Remove Filename");
-				   help.print("3:   Error Code 4: Change Mode ");
-				   help.print("4:   Error Code 4: Change Delimiter between Filename and Mode");
-				   help.print("5:   Error Code 4: Change Delimiter after Mode");
-				   help.print("6:   Error Code 5: Change Port Number");
+				   help.print("2:   Error Code 4: Change RRQ/WRQ to an invalid request");
+				   help.print("3:   Error Code 4: Remove Filename");
+				   help.print("4:   Error Code 4: Change Mode");
+				   help.print("5:   Error Code 4: Change Delimiter between Filename and Mode");
+				   help.print("6:   Error Code 4: Change Delimiter after Mode");
+				   help.print("7:   Error Code 4: DATA packet size greater than 512b");
+				   help.print("8:   Error Code 5: Change Port Number");
 					
 				   //Get the user input and convert to integer
 				   userInput = Integer.parseInt(sc.nextLine());
 					
 				   System.out.println("Input Selected: "+ userInput);
 					
-				   if(userInput >= 0 && userInput <= 6){ 
+				   if(userInput >= 0 && userInput <= 8){ 
 					   break;
 				   }
 				   
@@ -352,7 +420,7 @@ public class ErrorSimulator {
 	   public static void main( String args[] )
 	   {
 		   boolean verbose;
-		   Scanner sc = new Scanner(System.in);
+		   sc = new Scanner(System.in);
 		   while(true){
 			   // Ask the User the Mode to Operate in
 			   System.out.println("Would you like to run it in verbose mode (Y/N)?");
