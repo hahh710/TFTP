@@ -12,15 +12,15 @@ import java.util.Scanner;
 public class ErrorSimulator {
 	   private helplib 		  		help;
 	   private Packet 		  		Packet;
-	   private DatagramPacket 		serverReceivePacket, clientReceivePacket;
 	   private DatagramSocket		receiveSocket, sendSocket, sendReceiveSocket, changeSocket;		
-	   private Scanner 				sc;
+	   private static Scanner 		sc;
 	   private InetAddress 			address;
-	   private int 					clientPort, serverPort, userInput, totalBlocks, currentBlock;
+	   private int 					clientPort, serverPort, userInput, Req, packetNumber, clientReq = -1, pType;
 	   private boolean				transferringFile;
 	   
 	   public ErrorSimulator(boolean verbose){
 		   transferringFile = false;
+		   
 		   try{
 			   address = InetAddress.getLocalHost();
 		   } catch(UnknownHostException e){
@@ -58,18 +58,21 @@ public class ErrorSimulator {
 			   }else{
 				   try{
 					 Packet = help.recievePacket(sendSocket,500);
-					} catch (IOException e) 
-					{ 
-						help.print("No response from client, assuming client completed.");
-						sendSocket.close();
-						receiveSocket.close();
-						sendReceiveSocket.close();
-						return;
-					}
+				   } catch (IOException e) {
+					   help.print("No response from client, assuming client completed.");
+					   transferringFile = false;
+					   sendSocket.close();
+					   receiveSocket.close();
+					   sendReceiveSocket.close();
+					   return;
+				   }
 			   }
 			   
 			   // Extracting the Packet Received from the Client
 			   clientPort = Packet.GetPort();
+			   if(clientReq == -1){
+				   clientReq = Packet.GetRequest();
+			   }
 			   help.print("Packet Received From Port: "+ clientPort);
 		       help.print("Packet Received From Address: " + Packet.GetAddress() + "\n");
 		       
@@ -80,23 +83,25 @@ public class ErrorSimulator {
 		       data = Packet.GetData();
 		       int len = data.length;
 		       help.print("Length of Received Packet: " + len + "\n");
-		       help.print("Packet Received in Bytes: " + Arrays.toString(data));
+		       help.print("Packet Received in Bytes: " + help.byteToString(data));
 		   
 		       // Form a String from the byte array, and print the string.
 		       String received = new String(data,0,len);
 		       help.print("Packet Received in String: "+ received  + "\n");
 		       
-		       
-		       if(!isTransferringFile() && userInput < 6 && userInput > -1){
+		       // server sees them as being sent by the client
+		       if(!isTransferringFile() && userInput < 7 && userInput > -1){
 		    	   putError(Packet, userInput, sendReceiveSocket, 69);
-		    	   userInput = -1;
-		       }else if(isTransferringFile() && userInput == 6){
+		       }else if(Packet.GetRequest() == 3 && userInput == 7){ // DATA packet
+		    	   putError(Packet, userInput, sendReceiveSocket, serverPort);
+		       }else if(isTransferringFile() && userInput == 8){
 		    	   Packet p = Packet;
 		    	   putError(Packet, userInput, sendReceiveSocket, serverPort);
-		    	   userInput = -1;
 		    	   help.sendPacket(p, sendReceiveSocket, address, serverPort);
 		       }else if (!isTransferringFile()){
 		    	   help.sendPacket(Packet, sendReceiveSocket, address, 69);
+		       }else if(isTransferringFile() && userInput == 9){
+		    	   putError(Packet, userInput, sendReceiveSocket, serverPort);
 		       }else{
 		    	   help.sendPacket(Packet, sendReceiveSocket, address, serverPort);
 		       }
@@ -111,51 +116,76 @@ public class ErrorSimulator {
 		       
 		       // Data received
 		       data = Packet.GetData();
-		       help.print("Packet Received in Bytes: " + Arrays.toString(data));
+		       help.print("Packet Received in Bytes: " + help.byteToString(data));
 		       
 		       // Form a String from the byte array, and print the string.
 		       received = new String(data,0,data.length);
 		       help.print("Packet Received in String: "+ received  + "\n");
 		       
 		       // Send Packet received to client
-		       help.print("\nSend Packet received from Server to the Client");
-		       help.sendPacket(Packet, sendSocket, address, clientPort);
+		       help.print("Send Packet received from Server to the Client");
 		       
-		       if( Packet.GetErrCode() != 5){
-		    	   transferringFile = true;
+		       // client sees them as being sent by the server
+		       if(Packet.GetRequest() == 3 && userInput == 7) { // DATA packet
+		    	   putError(Packet, userInput, sendSocket, clientPort);
+		       }else if(isTransferringFile() && userInput == 8 && Packet.GetRequest() == 3){
+		    	   Packet p = Packet;
+		    	   putError(Packet, userInput, sendSocket, clientPort);
+		    	   userInput = -1;
+		    	   help.sendPacket(p, sendSocket, address, clientPort);
 		       }else{
-		    	   transferringFile = false;
-		    	   passOnTFTP();
+		    	   help.sendPacket(Packet, sendSocket, address, clientPort);
 		       }
 		       
+		       if(!isTransferringFile()){
+		    	   transferringFile = true;
+		       }
 		   }
 	   }
 	   
 	// Simulate the User error and send the new packet to the Server
 	   public void putError(Packet newPacket, int userInput, DatagramSocket soc, int port){   
 		   
+		   String sender = "";
+		   String packetName ="";
 		   // Data received
 		   byte[] data = newPacket.GetData();
+		   byte[] mode = newPacket.GetMode().getBytes();
+		   byte[] fileName = newPacket.GetFile().getBytes();
+		   int blockNumber = newPacket.GetPacketN();
+		   int packetType = newPacket.GetRequest();
+		   
+		   if(packetType == 3){
+			   packetName = "DATA";
+		   }else if(packetType == 4){
+			   packetName = "ACK";
+		   }
 		   
 		   // Putting the packet data into a String
 		   String msg = new String(data);
 		   
 		   help.print("Received Packet Length: "+ msg.length() + "\n");
 		   
+		   //used for cases 2 and 3
+		   byte[] newData;
+		   
 		   switch(userInput){
 		   case 0: 
 			   
 			   help.print("Sending unchanged Request to Server to establish a connection");
-			   help.print("Packet Received in Bytes: " + Arrays.toString(data));
+			   help.print("Packet Received in Bytes: " + msg);
 			   
+			   //forward the packet received
 			   help.sendPacket(newPacket, soc, address, port);
+			   
+			   this.userInput = -1;
 			   
 			   break;	
 			   
 		   case 1: // Change opcode
 			   
-			   help.print("Changing TFTP opcode\n");
-			   help.print("Original Packet: " + Arrays.toString(data));
+			   help.print("Changing TFTP opcode");
+			   help.print("Original Packet: " + msg);
 			   
 			   //Change RRQ to WRQ or WRQ to RRQ 
 			   if(data[1]  == 1){
@@ -167,39 +197,61 @@ public class ErrorSimulator {
 			   }
 			   
 			   // New Packet
-			   help.print("Modified Packet: " + Arrays.toString(data) + "\n");
+			   help.print("Modified Packet: " + help.byteToString(data) + "\n");
 			   
 			   // Send Packet to Server
 			   Packet = new Packet(data);
 			   help.sendPacket(Packet, soc, address, port);
+			   
+			   this.userInput = -1;
+			   
 			   break;
 			   
-		   case 2:	//Replace the Filename
+		   case 2: // change from RRQ/WRQ to an invalid request
 			   
+			   help.print("Changing request opcode to an invalid opcode");
+			   help.print("Original Packet: " + msg);
+			   
+			   //change opcode to an invalid opcode
+			   data[1] = 9;
+			   help.print("Modified Packet: " + help.byteToString(data) + "\n");
+			   
+			   //send new data to server
+			   help.sendPacket(data, soc, address, port);
+			   
+			   this.userInput = -1;
+			   
+			   break;
+			   
+		   case 3:	//Replace the Filename
+			
 			   help.print("Removing filename");
-			   help.print("Original Packet: " + Arrays.toString(data));
+			   help.print("Original Packet: " + msg);
 			   
 			   //remove filename
-			   byte[] newData = new byte[Packet.PACKETSIZE];
+			   newData = new byte[3 + mode.length];
 			   newData[0] = data[0];
 			   newData[1] = data[1];
 			   newData[2] = 0;
-			   byte[] mode = Packet.GetMode().getBytes();
 			   System.arraycopy(mode, 0, newData, 3, mode.length);
-			   newData[3 + mode.length] = 0;
+			   newData[2 + mode.length] = 0;
 			   
 			   // New Packet
-			   help.print("Modified Packet: " + Arrays.toString(newData) + "\n");
+			   help.print("Modified Packet: " + help.byteToString(newData) + "\n");
 				
 			   // Send Packet to Server
 			   Packet = new Packet(newData);
 			   help.sendPacket(Packet, soc, address, port);
 			   
+			   this.userInput = -1;
+			   
 			   break;
 			   
-		   case 3: //Replace the Mode
+		   case 4: //Replace the Mode
 			   
-			   help.print("\n"+"Changing the Original Mode to Something Else");
+			   help.print("Changing the Original Mode to Something Else");
+			   help.print("Original Packet: " + msg);
+			   
 			   byte[] mod =  "octettttt".getBytes();
 			   
 			   int counter = 0, k;
@@ -211,24 +263,28 @@ public class ErrorSimulator {
 			   }
 			   
 			   //Change the mode using arraycopy
-			   System.arraycopy(mod, 0, data, k + 1, mod.length);
+			   newData = new byte[data.length + mod.length];
+			   System.arraycopy(data, 0, newData, 0, 2 + fileName.length);
+			   System.arraycopy(mod, 0, newData, k + 1, mod.length);
 				  
 			   //Change the byte after the mode to 0
-			   data[k+ mod.length + 2] = 0;
+			   newData[newData.length - 1] = 0;
 				  
 			   // New Packet
-			   help.print("Modified Packet: " + Arrays.toString(data));
+			   help.print("Modified Packet: " + help.byteToString(data));
 			      
 			   // Send Packet to Server
-	           Packet = new Packet(data);
+	           Packet = new Packet(newData);
 			   help.sendPacket(Packet, soc, address, port);
-				 
+			   
+			   this.userInput = -1;
+			   
 			   break;
 			   
-		   case 4: //Change the Delimiter between Filename and Mode to 1
+		   case 5: // Change the Delimiter between Filename and Mode to 1
 			   
-			   help.print("\nChanging Delimiter between Filename and Mode");
-			   help.print("Original Packet" + Arrays.toString(data));
+			   help.print("Changing Delimiter between Filename and Mode");
+			   help.print("Original Packet" + msg);
 			   
 			   // Modify Packet
 			   int count = 0;
@@ -241,18 +297,20 @@ public class ErrorSimulator {
 			   data[i] = 1;
 			   
 			   // New Packet
-			   help.print("Modified Packet" + Arrays.toString(data));
+			   help.print("Modified Packet" + help.byteToString(data));
 			   
 		       // Send Packet to Server
 	           Packet = new Packet(data);
 			   help.sendPacket(Packet, soc, address, port);
 				
+			   this.userInput = -1;
+			   
 			   break;
 			   
-		   case 5:	//Change the Delimiter to 1
+		   case 6:	// Change the Delimiter to 1
 			   
 			   help.print("Changing the Delimiter after Mode to 1");
-			   help.print("Original Packet" + Arrays.toString(data));
+			   help.print("Original Packet" + msg);
 			   
 			   // Modify Packet
 			   count = 0;
@@ -264,15 +322,38 @@ public class ErrorSimulator {
 			   data[i] = 1;
 			     
 			   // New Packet  
-			   help.print("Modified Packet" + Arrays.toString(data) + "\n");
+			   help.print("Modified Packet" + help.byteToString(data) + "\n");
 			   
 			   // Send Packet to Server
 	           Packet = new Packet(data);
 			   help.sendPacket(Packet, soc, address, port);
 			   
+			   this.userInput = -1;
+			   
+			   break;
+			   
+		   case 7: // change DATA size to be greater than 512b
+			   
+			   help.print("Changing data size to be greater than 512b");
+			   
+			   //change DATA size
+			   newData = new byte[514];
+			   System.arraycopy(data, 0, newData, 0, data.length);
+			   newData[newData.length - 1] = 0;
+			   newData[newData.length - 2] = 1;
+			   
+			   // New Packet  
+			   Packet = new Packet(newPacket.GetPacketN(), newData);
+			   help.print("Modified Packet" + help.byteToString(Packet.GetData()) + "\n");
+			   
+			   //send Packet to server
+			   help.sendPacket(Packet, soc, address, port);
+			   
+			   this.userInput = -1;
+			   
 			   break;
 		   
-		   case 6: //Change the Socket Invalid TID
+		   case 8: // Change the Socket Invalid TID and send to the server.
 			   
 			   help.print("Changing the Port");
 			   try {
@@ -283,8 +364,14 @@ public class ErrorSimulator {
 			   
 			   help.print("Port Changed by Creating New Socket");
 			   
-			   // Send Packet through a new port to the server 
-			   help.sendPacket(Packet, changeSocket, address, serverPort);
+			   // Send Packet through a new port to the server or client 
+			   if(port == clientPort){
+				   help.print("Send to client through an invalid TID");
+			   }else{
+				   help.print("Send to server through an invalid TID");
+			   }
+			   
+			   help.sendPacket(Packet, changeSocket, address, port);
 			   
 			   // Receive Packet from server 
 			   Packet = help.recievePacket(changeSocket);
@@ -293,11 +380,42 @@ public class ErrorSimulator {
 			   help.print("Packet Received From Port: "+ Packet.GetPort());
 		       help.print("Packet Received From Address: " + Packet.GetAddress() + "\n");
 		       
-		       help.print("Packet Received in Bytes: " + Arrays.toString(Packet.GetData()));
+		       help.print("Packet Received in Bytes: " + help.byteToString(Packet.GetData()));
 		       help.print("Error Code : " + Packet.GetErrCode());
 		       help.print("Error Message: " + Packet.GetErrMSG());
-		      
+		       
 			   break;
+			   
+		   case 9: // Lose a packet, newPacket is p1
+			   help.print("Beginning losing a packet error simulation.");
+			   
+			   if(Req != clientReq){
+				   help.print("Wrong request.");
+				   help.sendPacket(newPacket, soc, address, port);
+				   userInput = -1;
+				   break;
+			   }
+			   
+			   if(pType != packetType && packetNumber != blockNumber){
+				   help.sendPacket(newPacket, soc, address, port);
+				   break;
+			   }
+			   
+			   //we have the correct packet number and type and request.
+			   if(port == clientPort){ //sending to the client
+				   soc = sendReceiveSocket;
+				   sender = "Server";
+			   }else{ //sending to the server
+				   soc = sendSocket;
+				   sender = "Client";
+			   }
+			   
+			   help.print("The " + sender +" lost the " + packetName + " packet.");
+			   help.print("waiting for " + sender + " to resend the " + packetName + " packet.");
+			   
+			   help.recievePacket(soc);
+			   
+			   
 		   }
 		   
 	   }// End of Method
@@ -314,21 +432,50 @@ public class ErrorSimulator {
 				   
 				   help.print("0:   Do Nothing");
 				   help.print("1:   Error Code 4: Change RRQ to WRQ or WRQ to RRQ");
-				   help.print("2:   Error Code 4: Remove Filename");
-				   help.print("3:   Error Code 4: Change Mode ");
-				   help.print("4:   Error Code 4: Change Delimiter between Filename and Mode");
-				   help.print("5:   Error Code 4: Change Delimiter after Mode");
-				   help.print("6:   Error Code 5: Change Port Number");
+				   help.print("2:   Error Code 4: Change RRQ/WRQ to an invalid request");
+				   help.print("3:   Error Code 4: Remove Filename");
+				   help.print("4:   Error Code 4: Change Mode");
+				   help.print("5:   Error Code 4: Change Delimiter between Filename and Mode");
+				   help.print("6:   Error Code 4: Change Delimiter after Mode");
+				   help.print("7:   Error Code 4: DATA packet size greater than 512b");
+				   help.print("8:   Error Code 5: Change Port Number");
+				   help.print("9:   Lose A Packet");
+				   help.print("10:  Delay A Packet");
+				   help.print("11:  Duplicate A Packet");
 					
 				   //Get the user input and convert to integer
 				   userInput = Integer.parseInt(sc.nextLine());
 					
 				   System.out.println("Input Selected: "+ userInput);
 					
-				   if(userInput >= 0 && userInput <= 6){ 
+				   if(userInput >= 0 && userInput <= 8){ 
 					   break;
+				   }else if(userInput >= 9 && userInput <= 11){
+					   
+					   help.print("Select the request type: \n\t\t1 for RRQ \n\t\t2 for WRQ");
+					   Req = Integer.parseInt(sc.nextLine());
+					   help.print("You chose: " + Req);
+					   
+					   if(Req == 1 || Req == 2){
+						   
+						   help.print("Select the packet type: \n\t\t3 for DATA \n\t\t4 for ACK");
+						   pType = Integer.parseInt(sc.nextLine());
+						   help.print("You chose: " + pType);
+						   
+						   if(pType == 3 || pType == 4){
+							   
+							   help.print("Enter the block number");
+							   packetNumber = Integer.parseInt(sc.nextLine());
+							   help.print("You chose: " + packetNumber);
+							   
+							   if(packetNumber > -1){
+								   break;
+							   }
+						   }
+					   }
 				   }
 				   
+				   System.out.println("");
 				   help.print("Invalid Selection! Please Try Again");
 				   
 			   }
@@ -346,7 +493,7 @@ public class ErrorSimulator {
 	   public static void main( String args[] )
 	   {
 		   boolean verbose;
-		   Scanner sc = new Scanner(System.in);
+		   sc = new Scanner(System.in);
 		   while(true){
 			   // Ask the User the Mode to Operate in
 			   System.out.println("Would you like to run it in verbose mode (Y/N)?");
