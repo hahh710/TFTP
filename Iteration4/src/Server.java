@@ -326,7 +326,7 @@ class ServerWorker extends Thread{
 			help.sendPacket(ack, soc, address, port);
 			Packet rec;
 			try {
-				rec = recurreceive(soc,help.timeout,help.retries,null);
+				rec = recurreceive(soc,help.timeout,help.retries,ack);
 			} catch (IOException e1) {
 				help.print("Connection timed out, tread quitting.");
 				soc.close();

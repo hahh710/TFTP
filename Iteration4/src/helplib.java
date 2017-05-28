@@ -99,6 +99,15 @@ public class helplib {
 		catch (Exception e) { e.printStackTrace(); System.exit(1); }
 	}
 	
+	public void sendPacket(byte[] bReq, DatagramSocket soc, InetAddress addr, int port){
+		try{
+			DatagramPacket spkt = new DatagramPacket(bReq, bReq.length, addr, port);
+			soc.send(spkt);
+			printd("\nSent the following bytes:\n"+byteToString(bReq)+"\n");
+		}
+		catch (Exception e) { e.printStackTrace(); System.exit(1); }
+	}
+	
 	/*//Helper shortens the receive command;
 	public byte[] recievePacket(DatagramSocket soc){
 		try{

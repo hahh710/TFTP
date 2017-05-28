@@ -75,7 +75,7 @@ public class Client{
 				//Loop that t the file.
 				while(curBlock < numBlock){
 					if(valid) help.sendPacket(ack, soc, serverAddress, Port);
-					try { rec = recurreceive(soc, help.timeout, help.retries, null);
+					try { rec = recurreceive(soc, help.timeout, help.retries, ack);
 					} catch (IOException e) { help.print("No response, ending session."); return; }
 					
 					if(!help.isOkay(rec, 3)){ 				
