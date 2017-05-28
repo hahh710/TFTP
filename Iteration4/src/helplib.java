@@ -19,8 +19,8 @@ import java.net.*;
 
 //A collection of helper libraries to automate certain events.
 public class helplib {
-	public  final int timeout = 500;
-	public  final int retries = 5;
+	public  int timeout = 500;
+	public  int retries = 5;
 	private String name;
 	private boolean verbose;
 	public helplib(String Name, boolean Verbose){

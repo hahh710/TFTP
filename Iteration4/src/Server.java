@@ -259,6 +259,7 @@ class ServerWorker extends Thread{
 				return; 
 			}
 
+			if(rec.GetRequest()!=4) System.exit(1);
 			//File transfer loop;
 			boolean valid = true;
 			while(curBlock <= numBlock){
@@ -358,7 +359,7 @@ class ServerWorker extends Thread{
 			help.sendPacket(ack, soc, address, port);
 			while(curBlock < numBlock){
 				try {
-					rec = recurreceive(soc,help.timeout,help.retries,null);
+					rec = recurreceive(soc,help.timeout,help.retries,ack);
 				} catch (IOException e1) {
 					help.print("Connection timed out, tread quitting.");
 					soc.close();
