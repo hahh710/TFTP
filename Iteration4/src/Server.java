@@ -29,7 +29,7 @@ public class Server{
 		}
 	  	
 	  	while(true){
-			System.out.println("Do you wish to change working director (Y/N)?\nCurrently set to the following path: \n"+path);
+			System.out.println("Do you wish to change working directory (Y/N)?\nCurrently set to the following path: \n"+path);
 			
 			String input = sc.nextLine();
 			if(input.toUpperCase().equals("Y")){ changePath=true;  break;}
@@ -261,10 +261,15 @@ class ServerWorker extends Thread{
 
 			if(rec.GetRequest()!=4) System.exit(1);
 			//File transfer loop;
+			boolean valid = true;
 			while(curBlock <= numBlock){
-				byte[] bData = help.ReadData(FIn, curBlock, Packet.DATASIZE);
-				ack = new Packet(curBlock,bData);
-				help.sendPacket(ack, soc, address, port);
+				ack = null;
+				if(valid){
+					byte[] bData = help.ReadData(FIn, curBlock, Packet.DATASIZE);
+					ack = new Packet(curBlock,bData);
+					help.sendPacket(ack, soc, address, port);
+				}
+				
 				try {
 					rec = recurreceive(soc,help.timeout,help.retries,ack);
 				} catch (IOException e) {
@@ -280,9 +285,13 @@ class ServerWorker extends Thread{
 					return; 
 				}
 				
-				if(rec.GetRequest()==4){
+				if(rec.GetPacketN()==curBlock){
 					curBlock++;
-				} else System.exit(1);
+					valid = true;
+				} else {
+					help.print("Invalid acknowledgment recieved! Ignoring.");
+					valid = false;
+				}
 			}
 			ack = new Packet(curBlock);
 			help.sendPacket(ack, soc, address, port);
@@ -369,14 +378,14 @@ class ServerWorker extends Thread{
 				if(curBlock+1==rec.GetPacketN()){ 
 					curBlock++; 
 					help.WriteData(FOut, rec.GetData());
+					//Create response with the current block received;
+					ack = new Packet(rec.GetPacketN());
+					help.sendPacket(ack, soc, address, port);
 				}
 				else{
-					help.print("Invalid Packet Recieved! Closing.");
-					System.exit(1);
+					help.print("Invalid datablock recieved! Ignoring.");
 				}
-				//Create response with the current block received;
-				ack = new Packet(rec.GetPacketN());
-				help.sendPacket(ack, soc, address, port);
+
 			}
 			try { FOut.close(); } catch (IOException e) { e.printStackTrace(); }
 		}

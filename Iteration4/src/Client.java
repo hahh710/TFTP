@@ -71,10 +71,11 @@ public class Client{
 				//Once Handshake is established, initiate file transfer.
 				help.print("Initiating file transfer.");
 				Packet ack = new Packet(numBlock);
-				//Loop that transfers the file.
+				boolean valid = true;
+				//Loop that t the file.
 				while(curBlock < numBlock){
-					help.sendPacket(ack, soc, serverAddress, Port);
-					try { rec = recurreceive(soc, help.timeout, help.retries, ack);
+					if(valid) help.sendPacket(ack, soc, serverAddress, Port);
+					try { rec = recurreceive(soc, help.timeout, help.retries, null);
 					} catch (IOException e) { help.print("No response, ending session."); return; }
 					
 					if(!help.isOkay(rec, 3)){ 				
@@ -88,13 +89,15 @@ public class Client{
 					if(curBlock+1==rec.GetPacketN()){ 
 						curBlock++; 
 						help.WriteData(FOut, rec.GetData());
+						ack = new Packet(rec.GetPacketN());
+						valid = true;
 					}
 					else{
-						help.print("Invalid Packet Recieved! Closing.");
-						System.exit(1);
+						help.print("Invalid datablock recieved! Ignoring.");
+						valid = false;
 					}
 					//Create response with the current block received;
-					ack = new Packet(rec.GetPacketN());
+
 				}
 				ack = new Packet(numBlock);
 				ack = help.sendReceive(ack, soc, serverAddress, Port);
@@ -145,17 +148,25 @@ public class Client{
 				}
 				return;
 			}
-			
+			boolean valid = true;
 			while(curBlock <= numBlock){
-				byte[] bData = help.ReadData(FIn, curBlock, Packet.DATASIZE);
-				Packet ack = new Packet(curBlock,bData);
-				
-				help.sendPacket(ack, soc, serverAddress, Port);
+				Packet ack = null; 
+				if(valid){
+					byte[] bData = help.ReadData(FIn, curBlock, Packet.DATASIZE);
+					ack = new Packet(curBlock,bData);
+					help.sendPacket(ack, soc, serverAddress, Port);
+				}
 				try { rec = recurreceive(soc, help.timeout, help.retries, ack);
 				} catch (IOException e) { help.print("No response, ending session."); return; }
 				
 				if(!help.isOkay(rec, 4)){ return; }
-				curBlock++;
+				if(rec.GetPacketN()==curBlock){
+					curBlock++;
+					valid = true;
+				} else {
+					help.print("Invalid acknowledgment recieved! Ignoring.");
+					valid = false;
+				}
 			}
 			
 		}
