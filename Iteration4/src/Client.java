@@ -62,7 +62,11 @@ public class Client{
 			serverAddress = rec.GetAddress();
 			Port = rec.GetPort();
 			
-			if(!help.isOkay(rec, 4)){ return; }
+			if(!help.isOkay(rec, 4)){ 
+				Packet ERR = new Packet(4,"Invalid packet received.");
+				help.sendPacket(ERR, soc, serverAddress, Port);
+				return; 
+			}
 			numBlock=rec.GetPacketN();
 			
 			System.out.println();
@@ -78,11 +82,9 @@ public class Client{
 					try { rec = recurreceive(soc, help.timeout, help.retries, ack);
 					} catch (IOException e) { help.print("No response, ending session."); return; }
 					
-					if(!help.isOkay(rec, 3)){ 				
-						if(rec.GetRequest()==4){
-							Packet ERR = new Packet(4,"Invalid packet received.");
-							help.sendPacket(ERR, soc, serverAddress, Port);
-						}
+					if(!help.isOkay(rec, 3)){
+						Packet ERR = new Packet(4,"Invalid packet received.");
+						help.sendPacket(ERR, soc, serverAddress, Port);
 						return;  
 					}
 					//Makes sure the packet is valid and then writes it to file.
@@ -142,10 +144,8 @@ public class Client{
 			} catch (IOException e) { help.print("No response, ending session."); return; }
 			
 			if(!help.isOkay(rec, 4)){ 
-				if(rec.GetRequest()==3){
-					Packet ERR = new Packet(4,"Invalid packet received.");
-					help.sendPacket(ERR, soc, serverAddress, Port);
-				}
+				Packet ERR = new Packet(4,"Invalid packet received.");
+				help.sendPacket(ERR, soc, serverAddress, Port);
 				return;
 			}
 			boolean valid = true;
@@ -156,10 +156,16 @@ public class Client{
 					ack = new Packet(curBlock,bData);
 					help.sendPacket(ack, soc, serverAddress, Port);
 				}
+				
 				try { rec = recurreceive(soc, help.timeout, help.retries, ack);
 				} catch (IOException e) { help.print("No response, ending session."); return; }
+				if(!help.isOkay(rec, 4)){ 
+					Packet ERR = new Packet(4,"Invalid packet received.");
+					help.sendPacket(ERR, soc, serverAddress, Port);
+					return; 
+				}
 				
-				if(!help.isOkay(rec, 4)){ return; }
+				
 				if(rec.GetPacketN()==curBlock){
 					curBlock++;
 					valid = true;

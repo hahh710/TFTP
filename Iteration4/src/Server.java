@@ -259,7 +259,6 @@ class ServerWorker extends Thread{
 				return; 
 			}
 
-			if(rec.GetRequest()!=4) System.exit(1);
 			//File transfer loop;
 			boolean valid = true;
 			while(curBlock <= numBlock){
