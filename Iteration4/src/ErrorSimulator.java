@@ -100,7 +100,7 @@ public class ErrorSimulator {
 				help.sendPacket(p, sendReceiveSocket, address, serverPort);
 			}else if (!isTransferringFile()){
 				help.sendPacket(Packet, sendReceiveSocket, address, 69);
-			}else if(isTransferringFile() && userInput == 9){
+			}else if(isTransferringFile() && userInput >= 9 && userInput <= 11){
 				putError(Packet, userInput, sendReceiveSocket, serverPort);
 			}else{
 				help.sendPacket(Packet, sendReceiveSocket, address, serverPort);
@@ -133,7 +133,7 @@ public class ErrorSimulator {
 				putError(Packet, userInput, sendSocket, clientPort);
 				userInput = -1;
 				help.sendPacket(p, sendSocket, address, clientPort);
-			}else if(isTransferringFile() && userInput == 9){
+			}else if(isTransferringFile() && userInput >= 9 && userInput <= 11){
 				putError(Packet, userInput, sendSocket, clientPort);
 			}else{
 				help.sendPacket(Packet, sendSocket, address, clientPort);
@@ -358,7 +358,7 @@ public class ErrorSimulator {
 			break;
 
 		case 8: // Change the Socket Invalid TID and send to the server.
-			help.print("vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv");
+			help.print("vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv");
 			help.print("Changing the Port");
 			try {
 				changeSocket = new DatagramSocket();
@@ -387,7 +387,7 @@ public class ErrorSimulator {
 			help.print("Packet Received in Bytes: " + help.byteToString(Packet.GetData()));
 			help.print("Error Code : " + Packet.GetErrCode());
 			help.print("Error Message: " + Packet.GetErrMSG());
-			help.print("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^");
+			help.print("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^");
 			
 			break;
 
@@ -396,7 +396,9 @@ public class ErrorSimulator {
 			help.print("Beginning delaying a packet error simulation.");
 
 			if(Req != clientReq){
+				help.print("vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv");
 				help.print("Wrong request.");
+				help.print("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^");
 				help.sendPacket(newPacket, soc, address, port);
 				userInput = -1;
 				break;
@@ -410,7 +412,7 @@ public class ErrorSimulator {
 
 			//we have the correct packet number and type and request.
 			
-			help.print("vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv");
+			help.print("vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv");
 			
 			//receiver times out
 			help.print("receiving Message from first time out");
@@ -437,7 +439,7 @@ public class ErrorSimulator {
 			}
 
 			help.print("Mission was a success.");
-			help.print("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^");
+			help.print("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^");
 			userInput = -1;
 
 			break;
@@ -448,7 +450,9 @@ public class ErrorSimulator {
 
 			if(Req != clientReq){
 				
+				help.print("vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv");
 				help.print("Wrong request.");
+				help.print("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^");
 				help.sendPacket(newPacket, soc, address, port);
 				userInput = -1;
 				break;
@@ -461,7 +465,7 @@ public class ErrorSimulator {
 			}
 
 			//we have the correct packet number and type and request.
-			help.print("vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv");
+			help.print("vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv");
 			
 			//receiver times out
 			help.print("receiving Message from first time out");
@@ -476,17 +480,71 @@ public class ErrorSimulator {
 			}
 
 			//sender times out
-			help.print("receiving Message from second time out");
+			help.print("receiving Message from " + sender + " time out");
 			Packet = help.recievePacket(soc);
 
 			if(port == clientPort){
+				help.print("Sending packet to client");
 				help.sendPacket(Packet, sendSocket, address, clientPort);
 			}else{
+				help.print("Sending packet to server");
 				help.sendPacket(Packet, sendReceiveSocket, address, serverPort);
 			}
 
 			help.print("Mission was a success.");
-			help.print("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^");
+			help.print("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^");
+			userInput = -1;
+
+			break;
+			
+		case 11: //Duplicating packets
+			
+			help.print("Beginning duplicating a packet error simulation.");
+
+			if(Req != clientReq){
+				help.print("vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv");
+				help.print("Wrong request.");
+				help.print("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^");
+				help.sendPacket(newPacket, soc, address, port);
+				userInput = -1;
+				break;
+			}
+
+			if(!(pType == packetType && packetNumber == blockNumber)){
+				help.print("Wrong packet type or block number");
+				help.sendPacket(newPacket, soc, address, port);
+				break;
+			}
+			
+			if(port == clientPort){ //sending to the client
+				sender = "Client";
+			}else{ //sending to the server
+				sender = "Server";
+			}
+			
+			help.print("vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv");
+			
+			p1 = Packet;
+			
+			help.print("Forwarding packet to " + sender);
+			help.sendPacket(p1, soc, address, port);
+			
+			help.print("Receiving Packet from " + sender);
+			Packet = help.recievePacket(soc);
+			
+			help.print("Sending duplicate packet " + sender);
+			help.sendPacket(p1, soc, address, port);
+			
+			if(port == clientPort){ //sending to the client
+				help.print("Sending packet to server");
+				help.sendPacket(Packet, sendReceiveSocket, address, serverPort);
+			}else{ //sending to the server
+				help.print("Sending packet to client");
+				help.sendPacket(Packet, sendSocket, address, clientPort);
+			}
+			
+			help.print("Mission was a success.");
+			help.print("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^");
 			userInput = -1;
 
 			break;

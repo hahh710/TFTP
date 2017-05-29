@@ -94,7 +94,7 @@ public class helplib {
 			byte[] bReq = p.toBytes();
 			DatagramPacket spkt = new DatagramPacket(bReq, bReq.length, addr, port);
 			soc.send(spkt);
-			printd("\nSent the packet: "+p+"\nWith the following bytes:\n"+byteToString(bReq)+"\n");
+			printd("Sent the packet: "+p+"\nWith the following bytes:\n"+byteToString(bReq)+"\n");
 		}
 		catch (Exception e) { e.printStackTrace(); System.exit(1); }
 	}
@@ -103,7 +103,7 @@ public class helplib {
 		try{
 			DatagramPacket spkt = new DatagramPacket(bReq, bReq.length, addr, port);
 			soc.send(spkt);
-			printd("\nSent the following bytes:\n"+byteToString(bReq)+"\n");
+			printd("Sent the following bytes:\n"+byteToString(bReq)+"\n");
 		}
 		catch (Exception e) { e.printStackTrace(); System.exit(1); }
 	}
