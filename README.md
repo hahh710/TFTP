@@ -1,7 +1,7 @@
 Read Me
 
 Name: 
-Adebola Shittu         100918348 - Error Simulator
+Adebola Shittu         100918348 - Error Simulator/Reports and Documentation
 Rami Daham             100995251 - Error Simulator\Reports and Documentation
 Vishahan Thilagakumar  100994856 - Server
 Kariharan Thiagakumar  100922048 - Client
@@ -19,7 +19,7 @@ Documentation Files Included:
 =====================================================================
 File Transfer Protocol
 Sending File format from the Client to the intermediate and finally 
-to the Server which in turns send back an acknowledgement
+to the Server which in turns send back an acknowledgement. 
 
 
 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -101,6 +101,13 @@ An assortment of reusable functins accorss the classes. Helplib has a method for
 * Print with Verbose communication
 * handing File input and output
 
+Transmission Error
+
+  On The server Side
+     The Server Timesout when it fails to receive packet from the client or Error Simulator
+     
+  On the Client Side
+     The client Times out when it fails to receive acknowledgement from the server
 Packet
 This hides away manually dealing with creating byte to be sent in Datagram Packet.
 
