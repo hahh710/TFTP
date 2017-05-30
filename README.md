@@ -1,11 +1,11 @@
 Read Me
 
 Name: 
-Adebola Shittu         100918348 - Error Simulator/Reports and Documentation
-Rami Daham             100995251 - Error Simulator\Reports and Documentation
-Vishahan Thilagakumar  100994856 - Server
-Kariharan Thiagakumar  100922048 - Client
-Huno Ha:               100868604 - Debugging
+Adebola Shittu         100918348 - Reports and Documentation
+Rami Daham             100995251 - Error Simulator (added it2 feedback + it4)\Reports and Documentation
+Vishahan Thilagakumar  100994856 - Server (added it3 feedback + it4)
+Kariharan Thiagakumar  100922048 - Client (added it3 feedback + it4)
+Huno Ha:               100868604 - Debugging (updated helplib and Packet methods)
 
 Documentation Files Included:
  -README - "README.md"
