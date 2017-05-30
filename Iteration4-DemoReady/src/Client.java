@@ -8,14 +8,16 @@ public class Client{
 	private String 			workingDir;
 	private InetAddress		serverAddress;
 	private int				Port;
+	private boolean			addrInit;
 
 	public Client(int port, InetAddress addr, String dir, boolean verbose){
 		help = new helplib("Client", verbose);
 		try{ soc = new DatagramSocket(); } 
 		catch(SocketException se){ help.print("Failed to create Socket."); System.exit(1); }
-		workingDir	= dir;
-		Port 		= port;
+		workingDir		= dir;
+		Port 			= port;
 		serverAddress 	= addr;
+		addrInit 		= false;
 		help.print("Initialized");
 	}
 
@@ -58,10 +60,17 @@ public class Client{
 			help.print("Attempting request...");
 
 			Packet req = new Packet(1, sendFile, "netascii");
-			Packet rec = help.sendReceive(req, soc, serverAddress, Port);
+			Packet rec;// = help.sendReceive(req, soc, serverAddress, Port);
+			
+			help.sendPacket(req, soc, serverAddress, Port);
+			try { rec = recurreceive(soc, help.timeout, help.retries, req);
+			} catch (IOException e) { help.print("No response, ending session."); return; }
+			
+			
 			serverAddress = rec.GetAddress();
 			Port = rec.GetPort();
-
+			addrInit = true;
+			
 			if(!help.isOkay(rec, 4)){
 				if(rec.GetRequest()!=5)
 				{
@@ -140,9 +149,17 @@ public class Client{
 
 			//Send the request;
 			Packet req = new Packet(2, saveFile, "netascii");
-			Packet rec = help.sendReceive(req, soc, serverAddress, Port);
+			Packet rec;// = help.sendReceive(req, soc, serverAddress, Port);
+			
+			help.sendPacket(req, soc, serverAddress, Port);
+			try { rec = recurreceive(soc, help.timeout, help.retries, req);
+			} catch (IOException e) { help.print("No response, ending session."); return; }
+			
+			
 			serverAddress = rec.GetAddress();
 			Port = rec.GetPort();
+			addrInit = true;
+			
 			if(!help.isOkay(rec, 4)){
 				if(rec.GetRequest()!=5)
 				{
@@ -213,7 +230,7 @@ public class Client{
 			if(retries>0) return recurreceive(soc,timeout,retries-1,resend);
 			throw e;
 		}
-		if(!checkAddress(rec)){
+		if((!checkAddress(rec)) && addrInit){
 			Packet ERR = new Packet(5,"Packet received from unknown sender.");
 			help.sendPacket(ERR, soc,rec.GetAddress(),rec.GetPort());
 			help.print("Listenning for the connection again...");
