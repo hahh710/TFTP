@@ -11,12 +11,12 @@ import java.util.Scanner;
 
 public class ErrorSimulator {
 	private helplib 		  		help;
-	private Packet 		  			Packet;
-	private DatagramSocket			receiveSocket, sendSocket, sendReceiveSocket, changeSocket;		
-	private static Scanner 			sc;
+	private Packet 		  		Packet;
+	private DatagramSocket		receiveSocket, sendSocket, sendReceiveSocket, changeSocket;		
+	private static Scanner 		sc;
 	private InetAddress 			address;
 	private int 					clientPort, serverPort, userInput, Req, packetNumber, clientReq = -1, pType;
-	private boolean					transferringFile, skipServer = false, skipClient = false;
+	private boolean				transferringFile;
 
 	public ErrorSimulator(boolean verbose){
 		transferringFile = false;
@@ -53,23 +53,19 @@ public class ErrorSimulator {
 			byte[] data = new byte[Packet.PACKETSIZE];
 
 			// Receive Packet from Client
-			if(!skipClient){
-				if(!isTransferringFile()){
-					Packet = help.recievePacket(receiveSocket);
-				}else{
-					try{
-						Packet = help.recievePacket(sendSocket,500);
-					} catch (IOException e) {
-						help.print("No response from client, assuming client completed.");
-						transferringFile = false;
-						sendSocket.close();
-						receiveSocket.close();
-						sendReceiveSocket.close();
-						return;
-					}
-				}
+			if(!isTransferringFile()){
+				Packet = help.recievePacket(receiveSocket);
 			}else{
-				skipClient = false;
+				try{
+					Packet = help.recievePacket(sendSocket,500);
+				} catch (IOException e) {
+					help.print("No response from client, assuming client completed.");
+					transferringFile = false;
+					sendSocket.close();
+					receiveSocket.close();
+					sendReceiveSocket.close();
+					return;
+				}
 			}
 
 			// Extracting the Packet Received from the Client
@@ -109,38 +105,35 @@ public class ErrorSimulator {
 			}else{
 				help.sendPacket(Packet, sendReceiveSocket, address, serverPort);
 			}
-			
-			if(!skipServer){
-				try{
-					Packet = help.recievePacket(sendReceiveSocket,2500);
-				} catch (IOException e) {
-					help.print("No response from server, assuming server completed.");
-					transferringFile = false;
-					sendSocket.close();
-					receiveSocket.close();
-					sendReceiveSocket.close();
-					return;
-				}
 
-				serverPort = Packet.GetPort();
 
-				// Extract information received from server
-				help.print("Packet Received From Port: "+ serverPort);
-				help.print("Packet Received From Address: " + Packet.GetAddress() + "\n");
-
-				// Data received
-				data = Packet.GetData();
-				help.print("Packet Received in Bytes: " + help.byteToString(data));
-
-				// Form a String from the byte array, and print the string.
-				received = new String(data,0,data.length);
-				help.print("Packet Received in String: "+ received  + "\n");
-
-				// Send Packet received to client
-				help.print("Send Packet received from Server to the Client");
-			}else{
-				skipServer = false;
+			try{
+				Packet = help.recievePacket(sendReceiveSocket,2500);
+			} catch (IOException e) {
+				help.print("No response from server, assuming server completed.");
+				transferringFile = false;
+				sendSocket.close();
+				receiveSocket.close();
+				sendReceiveSocket.close();
+				return;
 			}
+			
+			serverPort = Packet.GetPort();
+
+			// Extract information received from server
+			help.print("Packet Received From Port: "+ serverPort);
+			help.print("Packet Received From Address: " + Packet.GetAddress() + "\n");
+
+			// Data received
+			data = Packet.GetData();
+			help.print("Packet Received in Bytes: " + help.byteToString(data));
+
+			// Form a String from the byte array, and print the string.
+			received = new String(data,0,data.length);
+			help.print("Packet Received in String: "+ received  + "\n");
+
+			// Send Packet received to client
+			help.print("Send Packet received from Server to the Client");
 
 			// client sees them as being sent by the server
 			if(Packet.GetRequest() == 3 && userInput == 7) { // DATA packet
@@ -405,12 +398,12 @@ public class ErrorSimulator {
 			help.print("Error Code : " + Packet.GetErrCode());
 			help.print("Error Message: " + Packet.GetErrMSG());
 			help.print("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^");
-
+			
 			break;
 
 		case 9: // Delaying a Packet
 
-			help.print("Beginning delaying the " + packetName + " packet error simulation.");
+			help.print("Beginning delaying a packet error simulation.");
 
 			if(Req != clientReq){
 				help.print("vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv");
@@ -428,9 +421,9 @@ public class ErrorSimulator {
 			}
 
 			//we have the correct packet number and type and request.
-
+			
 			help.print("vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv");
-
+			
 			//receiver times out
 			help.print("receiving Message from first time out");
 			p1 = help.recievePacket(soc);
@@ -463,10 +456,10 @@ public class ErrorSimulator {
 
 		case 10: // Lose a packet
 
-			help.print("Beginning losing the " + packetName + " error simulation.");
+			help.print("Beginning losing a packet error simulation.");
 
 			if(Req != clientReq){
-
+				
 				help.print("vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv");
 				help.print("Wrong request.");
 				help.print("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^");
@@ -483,7 +476,7 @@ public class ErrorSimulator {
 
 			//we have the correct packet number and type and request.
 			help.print("vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv");
-
+			
 			//receiver times out
 			help.print("receiving Message from first time out");
 			p1 = help.recievePacket(soc);
@@ -513,10 +506,10 @@ public class ErrorSimulator {
 			userInput = -1;
 
 			break;
-
+			
 		case 11: //Duplicating packets
-
-			help.print("Beginning duplicating the " + packetName + " error simulation.");
+			
+			help.print("Beginning duplicating a packet error simulation.");
 
 			if(Req != clientReq){
 				help.print("vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv");
@@ -532,41 +525,57 @@ public class ErrorSimulator {
 				help.sendPacket(newPacket, soc, address, port);
 				break;
 			}
-
+			
 			if(port == clientPort){ //sending to the client
 				sender = "Client";
 			}else{ //sending to the server
 				sender = "Server";
 			}
-
+			
 			help.print("vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv");
-
+			
 			p1 = Packet;
-
+			
 			help.print("Forwarding packet to " + sender);
 			help.sendPacket(p1, soc, address, port);
-
+			
 			help.print("Receiving Packet from " + sender);
 			Packet = help.recievePacket(soc);
-
+			
 			help.print("Sending duplicate packet " + sender);
 			help.sendPacket(p1, soc, address, port);
-
-			if(port == clientPort){ //sending to the client
+			
+			if(port == clientPort && ((Req == 1 && pType == 3) ||(Req == 2 && pType == 4))){ //sending to the client
 				help.print("Sending packet to server");
 				help.sendPacket(Packet, sendReceiveSocket, address, serverPort);
-			}else{ //sending to the server
+				
+				help.print("Receiving packet from server");
+				Packet = help.recievePacket(sendReceiveSocket);
+				
+				help.print("Sending packet to client");
+				help.sendPacket(Packet, sendSocket, address, clientPort);
+				
+			}else if(port == clientPort){
+				help.print("Sending packet to server");
+				help.sendPacket(Packet, sendReceiveSocket, address, serverPort);
+				
+			}else if(port == serverPort && ((Req == 1 && pType == 4) || (Req == 2 && pType == 3))){ //sending to the server
+				help.print("Sending packet to client");
+				help.sendPacket(Packet, sendSocket, address, clientPort);
+				
+				help.print("Receiving packet from client");
+				Packet = help.recievePacket(sendSocket);
+				
+				help.print("Sending packet to server");
+				help.sendPacket(Packet, sendReceiveSocket, address, serverPort);
+				
+			}else{
 				help.print("Sending packet to client");
 				help.sendPacket(Packet, sendSocket, address, clientPort);
 			}
-
+			
 			help.print("Mission was a success.");
 			help.print("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^");
-			if(Req == 1  && pType == 4){
-				skipServer = true;
-			}else if(Req == 2  && pType == 4){
-				skipClient = true;
-			}
 			userInput = -1;
 
 			break;
@@ -622,7 +631,6 @@ public class ErrorSimulator {
 							help.print("You chose: " + packetNumber);
 
 							if(packetNumber > -1){
-								help.print("Done with the Error Simulation setting.");
 								break;
 							}
 						}
