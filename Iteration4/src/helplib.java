@@ -127,6 +127,7 @@ public class helplib {
 		try{
 			byte[] bRec   = new byte[Packet.PACKETSIZE];
 			DatagramPacket rpkt = new DatagramPacket(bRec,bRec.length);
+			soc.setSoTimeout(0);
 			soc.receive(rpkt);
 			byte[] rBytes = new byte[rpkt.getLength()];
 			System.arraycopy(bRec, 0, rBytes, 0, rpkt.getLength());

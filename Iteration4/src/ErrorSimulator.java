@@ -11,16 +11,20 @@ import java.util.Scanner;
 
 public class ErrorSimulator {
 	private helplib 		  		help;
-	private Packet 		  		Packet;
-	private DatagramSocket		receiveSocket, sendSocket, sendReceiveSocket, changeSocket;		
-	private static Scanner 		sc;
+	private Packet 		  			Packet;
+	private DatagramSocket			receiveSocket, sendSocket, sendReceiveSocket, changeSocket;		
+	private static Scanner 			sc;
 	private InetAddress 			address;
-	private int 					clientPort, serverPort, userInput, Req, packetNumber, clientReq = -1, pType;
-	private boolean				transferringFile;
+	private int 					clientPort, serverPort, userInput, Req, packetNumber, clientReq = -1, pType, totalBlocks, count;
+	private boolean					transferringFile, skipClient, skipServer, first;
 
 	public ErrorSimulator(boolean verbose){
 		transferringFile = false;
-
+		skipClient = false;
+		skipServer = false;		
+		first = true;
+		count = 0;
+		
 		try{
 			address = InetAddress.getLocalHost();
 		} catch(UnknownHostException e){
@@ -51,96 +55,138 @@ public class ErrorSimulator {
 		//Infinite for loop so it comes back here to wait for Client
 		for(;;){
 			byte[] data = new byte[Packet.PACKETSIZE];
-
+			String received = "";
+			
 			// Receive Packet from Client
 			if(!isTransferringFile()){
+				help.print("Listening to client.\n");
 				Packet = help.recievePacket(receiveSocket);
 			}else{
 				try{
+					help.print("Listening to client.\n");
 					Packet = help.recievePacket(sendSocket,500);
 				} catch (IOException e) {
-					help.print("No response from client, assuming client completed.");
-					transferringFile = false;
-					sendSocket.close();
-					receiveSocket.close();
-					sendReceiveSocket.close();
-					return;
+					help.print("No response from client, switching to server.\n");
+					skipClient = true;
+					count++;
 				}
 			}
-
-			// Extracting the Packet Received from the Client
-			clientPort = Packet.GetPort();
-			if(clientReq == -1){
-				clientReq = Packet.GetRequest();
-			}
-			help.print("Packet Received From Port: "+ clientPort);
-			help.print("Packet Received From Address: " + Packet.GetAddress() + "\n");
-
-			// Filename and Mode
-			help.print("Filename : " + Packet.GetFile() + "  |   Mode : " + Packet.GetMode());
-
-			//Length of the packet received
-			data = Packet.GetData();
-			int len = data.length;
-			help.print("Length of Received Packet: " + len + "\n");
-			help.print("Packet Received in Bytes: \n" + help.byteToString(data));
-
-			// Form a String from the byte array, and print the string.
-			String received = new String(data,0,len);
-			help.print("Packet Received in String: "+ received  + "\n");
-
-			// server sees them as being sent by the client
-			if(!isTransferringFile() && userInput < 7 && userInput > -1){
-				putError(Packet, userInput, sendReceiveSocket, 69);
-			}else if(Packet.GetRequest() == 3 && userInput == 7){ // DATA packet
-				putError(Packet, userInput, sendReceiveSocket, serverPort);
-			}else if(isTransferringFile() && userInput == 8 && Packet.GetPacketN() == 1){
-				Packet p = Packet;
-				putError(Packet, userInput, sendReceiveSocket, serverPort);
-				help.sendPacket(p, sendReceiveSocket, address, serverPort);
-			}else if (!isTransferringFile()){
-				help.sendPacket(Packet, sendReceiveSocket, address, 69);
-			}else if(isTransferringFile() && userInput >= 9 && userInput <= 11){
-				putError(Packet, userInput, sendReceiveSocket, serverPort);
+			
+			if(!skipClient){
+				count = 0;
+				// Extracting the Packet Received from the Client
+				clientPort = Packet.GetPort();
+				
+				if(clientReq == -1){
+					clientReq = Packet.GetRequest();
+				}
+				help.print("Packet Received From Port: "+ clientPort);
+				help.print("Packet Received From Address: " + Packet.GetAddress() + "\n");
+	
+				// Filename and Mode
+				help.print("Filename : " + Packet.GetFile() + "  |   Mode : " + Packet.GetMode());
+	
+				//Length of the packet received
+				data = Packet.GetData();
+				int len = data.length;
+				help.print("Length of Received Packet: " + len + "\n");
+				help.print("Packet Received in Bytes: \n" + help.byteToString(data));
+	
+				// Form a String from the byte array, and print the string.
+				received = new String(data,0,len);
+				help.print("Packet Received in String: "+ received  + "\n");
+	
+				// server sees them as being sent by the client
+				if(!isTransferringFile() && userInput < 7 && userInput > -1){
+					putError(Packet, userInput, sendReceiveSocket, 69);
+				}else if(Packet.GetRequest() == 3 && userInput == 7){ // DATA packet
+					putError(Packet, userInput, sendReceiveSocket, serverPort);
+				}else if(isTransferringFile() && userInput == 8 && Packet.GetPacketN() == 1){
+					Packet p = Packet;
+					putError(Packet, userInput, sendReceiveSocket, serverPort);
+					help.sendPacket(p, sendReceiveSocket, address, serverPort);
+				}else if (!isTransferringFile()){
+					help.sendPacket(Packet, sendReceiveSocket, address, 69);
+				}else if(isTransferringFile() && userInput >= 9 && userInput <= 11){
+					putError(Packet, userInput, sendReceiveSocket, serverPort);
+				}else{
+					help.sendPacket(Packet, sendReceiveSocket, address, serverPort);
+				}
 			}else{
-				help.sendPacket(Packet, sendReceiveSocket, address, serverPort);
+				skipClient = false;
 			}
 
-			// Block until a datagram packet is received from sendReceiveSocket
-			Packet = help.recievePacket(sendReceiveSocket);
-			serverPort = Packet.GetPort();
 
-			// Extract information received from server
-			help.print("Packet Received From Port: "+ serverPort);
-			help.print("Packet Received From Address: " + Packet.GetAddress() + "\n");
-
-			// Data received
-			data = Packet.GetData();
-			help.print("Packet Received in Bytes: " + help.byteToString(data));
-
-			// Form a String from the byte array, and print the string.
-			received = new String(data,0,data.length);
-			help.print("Packet Received in String: "+ received  + "\n");
-
-			// Send Packet received to client
-			help.print("Send Packet received from Server to the Client");
-
-			// client sees them as being sent by the server
-			if(Packet.GetRequest() == 3 && userInput == 7) { // DATA packet
-				putError(Packet, userInput, sendSocket, clientPort);
-			}else if(isTransferringFile() && userInput == 8 && Packet.GetPacketN() == 1){
-				Packet p = Packet;
-				putError(Packet, userInput, sendSocket, clientPort);
-				userInput = -1;
-				help.sendPacket(p, sendSocket, address, clientPort);
-			}else if(isTransferringFile() && userInput >= 9 && userInput <= 11){
-				putError(Packet, userInput, sendSocket, clientPort);
+			try{
+				help.print("Listening to server.\n");
+				Packet = help.recievePacket(sendReceiveSocket,500);
+			} catch (IOException e) {
+				help.print("No response from server, switching to client.\n");
+				skipServer = true;
+				count++;
+			}
+			
+			if(!skipServer){
+				count = 0;
+				serverPort = Packet.GetPort();
+				
+				//get to total number of blocks to be sent
+				if(Packet.GetRequest() == 4 && first){
+					totalBlocks = Packet.GetPacketN();
+					first = false;
+					help.print("A total number of " + totalBlocks + " blocks will be sent.");
+				}
+				
+				// Extract information received from server
+				help.print("Packet Received From Port: "+ serverPort);
+				help.print("Packet Received From Address: " + Packet.GetAddress() + "\n");
+	
+				// Data received
+				data = Packet.GetData();
+				help.print("Packet Received in Bytes: " + help.byteToString(data));
+	
+				// Form a String from the byte array, and print the string.
+				received = new String(data,0,data.length);
+				help.print("Packet Received in String: "+ received  + "\n");
+	
+				// Send Packet received to client
+				help.print("Send Packet received from Server to the Client");
+	
+				// client sees them as being sent by the server
+				if(Packet.GetRequest() == 3 && userInput == 7) { // DATA packet
+					putError(Packet, userInput, sendSocket, clientPort);
+				}else if(isTransferringFile() && userInput == 8 && Packet.GetPacketN() == 1){
+					Packet p = Packet;
+					putError(Packet, userInput, sendSocket, clientPort);
+					userInput = -1;
+					help.sendPacket(p, sendSocket, address, clientPort);
+				}else if(isTransferringFile() && userInput >= 9 && userInput <= 11){
+					putError(Packet, userInput, sendSocket, clientPort);
+				}else{
+					help.sendPacket(Packet, sendSocket, address, clientPort);
+				}
 			}else{
-				help.sendPacket(Packet, sendSocket, address, clientPort);
+				skipServer = false;
 			}
 
 			if(!isTransferringFile()){
 				transferringFile = true;
+			}
+			
+			if(count > 3){
+				help.print("No response from server and client, assuming end of file transfer.\n");
+				
+				transferringFile = false;
+				skipClient = false;
+				skipServer = false;		
+				first = true;
+				count = 0;
+				
+				sendSocket.close();
+				receiveSocket.close();
+				sendReceiveSocket.close();
+				
+				return;
 			}
 		}
 	}
@@ -366,7 +412,7 @@ public class ErrorSimulator {
 				e.printStackTrace();
 			}		  
 
-			help.print("Port Changed by Creating New Socket");
+			help.print("Port Changed by Creating New Socket.");
 
 			// Send Packet through a new port to the server or client 
 			if(port == clientPort){
@@ -393,11 +439,11 @@ public class ErrorSimulator {
 
 		case 9: // Delaying a Packet
 
-			help.print("Beginning delaying a packet error simulation.");
+			help.print("Beginning delaying a packet error simulation.\n");
 
 			if(Req != clientReq){
 				help.print("vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv");
-				help.print("Wrong request.");
+				help.print("Wrong request.\n");
 				help.print("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^");
 				help.sendPacket(newPacket, soc, address, port);
 				userInput = -1;
@@ -405,7 +451,7 @@ public class ErrorSimulator {
 			}
 
 			if(!(pType == packetType && packetNumber == blockNumber)){
-				help.print("Wrong packet type or block number");
+				help.print("Wrong packet type or block number.\n");
 				help.sendPacket(newPacket, soc, address, port);
 				break;
 			}
@@ -470,11 +516,13 @@ public class ErrorSimulator {
 			//receiver times out
 			help.print("receiving Message from first time out");
 			p1 = help.recievePacket(soc);
-
+			
 			if(port == clientPort){ //sending to the client
+				help.sendPacket(p1, sendReceiveSocket, address, serverPort);
 				soc = sendReceiveSocket;
 				sender = "Server";
 			}else{ //sending to the server
+				help.sendPacket(p1, sendSocket, address, clientPort);
 				soc = sendSocket;
 				sender = "Client";
 			}
@@ -534,7 +582,7 @@ public class ErrorSimulator {
 			
 			help.print("Sending duplicate packet " + sender);
 			help.sendPacket(p1, soc, address, port);
-			
+				
 			if(port == clientPort){ //sending to the client
 				help.print("Sending packet to server");
 				help.sendPacket(Packet, sendReceiveSocket, address, serverPort);
@@ -623,6 +671,7 @@ public class ErrorSimulator {
 
 	public static void main( String args[] )
 	{
+		System.out.println("\n\n\n-=:ERROR SIMULATOR:=-\n\n\n");
 		boolean verbose;
 		sc = new Scanner(System.in);
 		while(true){
