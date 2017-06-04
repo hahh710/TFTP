@@ -1,12 +1,10 @@
 
 
 import java.io.IOException;
-import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.SocketException;
 import java.net.UnknownHostException;
-import java.util.Arrays;
 import java.util.Scanner;
 
 public class ErrorSimulator {
@@ -14,12 +12,13 @@ public class ErrorSimulator {
 	private Packet 		  			Packet;
 	private DatagramSocket			receiveSocket, sendSocket, sendReceiveSocket, changeSocket;		
 	private static Scanner 			sc;
-	private InetAddress 			address;
-	private int 					clientPort, serverPort, userInput, Req, packetNumber, clientReq = -1, pType, totalBlocks, count;
+	private InetAddress 			address, clientAddress, serverAddress, LocalAddress;
+	private int 					clientPort, serverPort, userInput, Req, packetNumber, clientReq, pType, totalBlocks, count;
 	private boolean					transferringFile, skipClient, skipServer, first;
 
 	public ErrorSimulator(boolean verbose){
 		transferringFile = false;
+		clientReq = -1;
 		skipClient = false;
 		skipServer = false;		
 		first = true;
@@ -77,6 +76,10 @@ public class ErrorSimulator {
 				// Extracting the Packet Received from the Client
 				clientPort = Packet.GetPort();
 				
+				if(clientAddress == null){
+					clientAddress = Packet.GetAddress();
+				}
+				
 				if(clientReq == -1){
 					clientReq = Packet.GetRequest();
 				}
@@ -98,19 +101,19 @@ public class ErrorSimulator {
 	
 				// server sees them as being sent by the client
 				if(!isTransferringFile() && userInput < 7 && userInput > -1){
-					putError(Packet, userInput, sendReceiveSocket, 69);
+					putError(Packet, userInput, sendReceiveSocket, 69, serverAddress);
 				}else if(Packet.GetRequest() == 3 && userInput == 7){ // DATA packet
-					putError(Packet, userInput, sendReceiveSocket, serverPort);
+					putError(Packet, userInput, sendReceiveSocket, serverPort, serverAddress);
 				}else if(isTransferringFile() && userInput == 8 && Packet.GetPacketN() == 1){
 					Packet p = Packet;
-					putError(Packet, userInput, sendReceiveSocket, serverPort);
-					help.sendPacket(p, sendReceiveSocket, address, serverPort);
+					putError(Packet, userInput, sendReceiveSocket, serverPort, serverAddress);
+					help.sendPacket(p, sendReceiveSocket, serverAddress, serverPort);
 				}else if (!isTransferringFile()){
-					help.sendPacket(Packet, sendReceiveSocket, address, 69);
+					help.sendPacket(Packet, sendReceiveSocket, serverAddress, 69);
 				}else if(isTransferringFile() && userInput >= 9 && userInput <= 11){
-					putError(Packet, userInput, sendReceiveSocket, serverPort);
+					putError(Packet, userInput, sendReceiveSocket, serverPort, serverAddress);
 				}else{
-					help.sendPacket(Packet, sendReceiveSocket, address, serverPort);
+					help.sendPacket(Packet, sendReceiveSocket, serverAddress, serverPort);
 				}
 			}else{
 				skipClient = false;
@@ -129,6 +132,10 @@ public class ErrorSimulator {
 			if(!skipServer){
 				count = 0;
 				serverPort = Packet.GetPort();
+				
+				if(serverAddress == null){
+					serverAddress = Packet.GetAddress();
+				}
 				
 				//get to total number of blocks to be sent
 				if(Packet.GetRequest() == 4 && first){
@@ -154,16 +161,16 @@ public class ErrorSimulator {
 	
 				// client sees them as being sent by the server
 				if(Packet.GetRequest() == 3 && userInput == 7) { // DATA packet
-					putError(Packet, userInput, sendSocket, clientPort);
+					putError(Packet, userInput, sendSocket, clientPort, clientAddress);
 				}else if(isTransferringFile() && userInput == 8 && Packet.GetPacketN() == 1){
 					Packet p = Packet;
-					putError(Packet, userInput, sendSocket, clientPort);
+					putError(Packet, userInput, sendSocket, clientPort, clientAddress);
 					userInput = -1;
-					help.sendPacket(p, sendSocket, address, clientPort);
+					help.sendPacket(p, sendSocket, clientAddress, clientPort);
 				}else if(isTransferringFile() && userInput >= 9 && userInput <= 11){
-					putError(Packet, userInput, sendSocket, clientPort);
+					putError(Packet, userInput, sendSocket, clientPort, clientAddress);
 				}else{
-					help.sendPacket(Packet, sendSocket, address, clientPort);
+					help.sendPacket(Packet, sendSocket, clientAddress, clientPort);
 				}
 			}else{
 				skipServer = false;
@@ -192,7 +199,7 @@ public class ErrorSimulator {
 	}
 
 	// Simulate the User error and send the new packet to the Server
-	public void putError(Packet newPacket, int userInput, DatagramSocket soc, int port){   
+	public void putError(Packet newPacket, int userInput, DatagramSocket soc, int port, InetAddress addr){   
 
 		String sender = "";
 		String packetName ="";
@@ -251,7 +258,7 @@ public class ErrorSimulator {
 
 			// Send Packet to Server
 			Packet = new Packet(data);
-			help.sendPacket(Packet, soc, address, port);
+			help.sendPacket(Packet, soc, addr, port);
 
 			this.userInput = -1;
 
@@ -267,7 +274,7 @@ public class ErrorSimulator {
 			help.print("Modified Packet: " + help.byteToString(data) + "\n");
 
 			//send new data to server
-			help.sendPacket(data, soc, address, port);
+			help.sendPacket(data, soc, addr, port);
 
 			this.userInput = -1;
 
@@ -291,7 +298,7 @@ public class ErrorSimulator {
 
 			// Send Packet to Server
 			Packet = new Packet(newData);
-			help.sendPacket(Packet, soc, address, port);
+			help.sendPacket(Packet, soc, addr, port);
 
 			this.userInput = -1;
 
@@ -325,7 +332,7 @@ public class ErrorSimulator {
 
 			// Send Packet to Server
 			Packet = new Packet(newData);
-			help.sendPacket(Packet, soc, address, port);
+			help.sendPacket(Packet, soc, addr, port);
 
 			this.userInput = -1;
 
@@ -351,7 +358,7 @@ public class ErrorSimulator {
 
 			// Send Packet to Server
 			Packet = new Packet(data);
-			help.sendPacket(Packet, soc, address, port);
+			help.sendPacket(Packet, soc, addr, port);
 
 			this.userInput = -1;
 
@@ -376,7 +383,7 @@ public class ErrorSimulator {
 
 			// Send Packet to Server
 			Packet = new Packet(data);
-			help.sendPacket(Packet, soc, address, port);
+			help.sendPacket(Packet, soc, addr, port);
 
 			this.userInput = -1;
 
@@ -421,7 +428,7 @@ public class ErrorSimulator {
 				help.print("Send to server through an invalid TID");
 			}
 
-			help.sendPacket(Packet, changeSocket, address, port);
+			help.sendPacket(Packet, changeSocket, addr, port);
 
 			// Receive Packet from server 
 			Packet = help.recievePacket(changeSocket);
@@ -445,14 +452,14 @@ public class ErrorSimulator {
 				help.print("vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv");
 				help.print("Wrong request.\n");
 				help.print("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^");
-				help.sendPacket(newPacket, soc, address, port);
+				help.sendPacket(newPacket, soc, addr, port);
 				userInput = -1;
 				break;
 			}
 
 			if(!(pType == packetType && packetNumber == blockNumber)){
 				help.print("Wrong packet type or block number.\n");
-				help.sendPacket(newPacket, soc, address, port);
+				help.sendPacket(newPacket, soc, addr, port);
 				break;
 			}
 
@@ -477,11 +484,11 @@ public class ErrorSimulator {
 			Packet = help.recievePacket(soc);
 
 			if(port == clientPort){
-				help.sendPacket(Packet, sendSocket, address, clientPort);
-				help.sendPacket(p1, sendReceiveSocket, address, serverPort);
+				help.sendPacket(Packet, sendSocket, clientAddress, clientPort);
+				help.sendPacket(p1, sendReceiveSocket, serverAddress, serverPort);
 			}else{
-				help.sendPacket(Packet, sendReceiveSocket, address, serverPort);
-				help.sendPacket(p1, sendSocket, address, clientPort);
+				help.sendPacket(Packet, sendReceiveSocket, serverAddress, serverPort);
+				help.sendPacket(p1, sendSocket, clientAddress, clientPort);
 			}
 
 			help.print("Mission was a success.");
@@ -499,14 +506,14 @@ public class ErrorSimulator {
 				help.print("vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv");
 				help.print("Wrong request.");
 				help.print("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^");
-				help.sendPacket(newPacket, soc, address, port);
+				help.sendPacket(newPacket, soc, addr, port);
 				userInput = -1;
 				break;
 			}
 
 			if(!(pType == packetType && packetNumber == blockNumber)){
 				help.print("Wrong packet type or block number");
-				help.sendPacket(newPacket, soc, address, port);
+				help.sendPacket(newPacket, soc, addr, port);
 				break;
 			}
 
@@ -518,11 +525,11 @@ public class ErrorSimulator {
 			p1 = help.recievePacket(soc);
 			
 			if(port == clientPort){ //sending to the client
-				help.sendPacket(p1, sendReceiveSocket, address, serverPort);
+				help.sendPacket(p1, sendReceiveSocket, serverAddress, serverPort);
 				soc = sendReceiveSocket;
 				sender = "Server";
 			}else{ //sending to the server
-				help.sendPacket(p1, sendSocket, address, clientPort);
+				help.sendPacket(p1, sendSocket, clientAddress, clientPort);
 				soc = sendSocket;
 				sender = "Client";
 			}
@@ -533,10 +540,10 @@ public class ErrorSimulator {
 
 			if(port == clientPort){
 				help.print("Sending packet to client");
-				help.sendPacket(Packet, sendSocket, address, clientPort);
+				help.sendPacket(Packet, sendSocket, clientAddress, clientPort);
 			}else{
 				help.print("Sending packet to server");
-				help.sendPacket(Packet, sendReceiveSocket, address, serverPort);
+				help.sendPacket(Packet, sendReceiveSocket, serverAddress, serverPort);
 			}
 
 			help.print("Mission was a success.");
@@ -553,14 +560,14 @@ public class ErrorSimulator {
 				help.print("vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv");
 				help.print("Wrong request.");
 				help.print("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^");
-				help.sendPacket(newPacket, soc, address, port);
+				help.sendPacket(newPacket, soc, addr, port);
 				userInput = -1;
 				break;
 			}
 
 			if(!(pType == packetType && packetNumber == blockNumber)){
 				help.print("Wrong packet type or block number");
-				help.sendPacket(newPacket, soc, address, port);
+				help.sendPacket(newPacket, soc, addr, port);
 				break;
 			}
 			
@@ -575,20 +582,20 @@ public class ErrorSimulator {
 			p1 = Packet;
 			
 			help.print("Forwarding packet to " + sender);
-			help.sendPacket(p1, soc, address, port);
+			help.sendPacket(p1, soc, addr, port);
 			
 			help.print("Receiving Packet from " + sender);
 			Packet = help.recievePacket(soc);
 			
 			help.print("Sending duplicate packet " + sender);
-			help.sendPacket(p1, soc, address, port);
+			help.sendPacket(p1, soc, addr, port);
 				
 			if(port == clientPort){ //sending to the client
 				help.print("Sending packet to server");
-				help.sendPacket(Packet, sendReceiveSocket, address, serverPort);
+				help.sendPacket(Packet, sendReceiveSocket, serverAddress, serverPort);
 			}else{ //sending to the server
 				help.print("Sending packet to client");
-				help.sendPacket(Packet, sendSocket, address, clientPort);
+				help.sendPacket(Packet, sendSocket, clientAddress, clientPort);
 			}
 			
 			help.print("Mission was a success.");
@@ -668,48 +675,81 @@ public class ErrorSimulator {
 		passOnTFTP();
 
 	}
-
-	public static void main( String args[] )
-	{
-		System.out.println("\n\n\n-=:ERROR SIMULATOR:=-\n\n\n");
-		
-		System.out.print("Local IP address of current machine: ");
-		try { System.out.println(InetAddress.getLocalHost().getHostAddress() + "\n"); }
-		catch(Exception e){ System.exit(1); }
-		
-		boolean verbose;
-		sc = new Scanner(System.in);
-		while(true){
-			// Ask the User the Mode to Operate in
-			System.out.println("Would you like to run it in verbose mode (Y/N)?");
-
-			String input = sc.nextLine();
-			if(input.toUpperCase().equals("Y")){ verbose=true; break;}
-			if(input.toUpperCase().equals("N")){ verbose=false; break;}
-			System.out.println("Invalid Mode! Select either 'Y'(Yes), 'N'(No)");
-		} 
-
-
-		boolean running = true;
-		//call the askInput method first to ask the user for what to do
-		while(running){
-
-			//Create an object of the error simulator
-			ErrorSimulator s = new ErrorSimulator(verbose);
-			s.askInput(sc);
-
-
+	
+	private void setServerAddress(InetAddress addr){
+		serverAddress = addr;
+	}
+	
+	public static void main(String[] args){
+		try {
+			InetAddress LocalAddress 	= InetAddress.getLocalHost();
+			InetAddress ServerAddress 	= LocalAddress;
+			boolean 	isLocal 		= false;
+			
+			System.out.println("\n\n\n-=:ERROR SIMULATOR:=-\n\n\n");
+			
+			System.out.print("Local IP address of current machine: ");
+			try { System.out.println(InetAddress.getLocalHost().getHostAddress() + "\n"); }
+			catch(Exception e){ System.exit(1); }
+			
+			boolean verbose;
+			boolean running = true;
+			Scanner sc = new Scanner(System.in);
 			while(true){
-				System.out.println("Would you like to run again (Y/N)?");
+				System.out.println("Would you like to run it in verbose mode (Y/N)?");
 
 				String input = sc.nextLine();
-				if(input.toUpperCase().equals("Y")){ running=true; break;}
-				if(input.toUpperCase().equals("N")){ running=false; break;}
+				if(input.toUpperCase().equals("Y")){ verbose=true; break;}
+				if(input.toUpperCase().equals("N")){ verbose=false; break;}
 				System.out.println("Invalid Mode! Select either 'Y'(Yes), 'N'(No)");
 			}
-			System.out.println();
-		}
-		sc.close();
+			
+			//Address of machine;
+			while(true){
+				System.out.println("Would you like to run locally (Y/N)?");
+
+				String input = sc.nextLine();
+				if(input.toUpperCase().equals("Y")){ isLocal=true; break;}
+				if(input.toUpperCase().equals("N")){ isLocal=false; break;}
+				System.out.println("Invalid Mode! Select either 'Y'(Yes), 'N'(No)");
+			}
+			while(true&&!isLocal){
+				System.out.println("Please enter the server address:");
+
+				String input = sc.nextLine();
+				
+				try{
+					ServerAddress = InetAddress.getByName(input);
+					if(ServerAddress.isReachable(5000)){
+						System.out.println("Address is valid.\n");
+						break;
+					}
+				} catch (UnknownHostException e){ 
+					System.out.println("Failed to Ping Address.");
+				}
+				System.out.println("Invalid Address.\n");
+			}
+			
+			while(running){
+				
+				//Create an object of the error simulator
+				ErrorSimulator s = new ErrorSimulator(verbose);
+				s.setServerAddress(ServerAddress);
+				s.askInput(sc);
+
+				while(true){
+					System.out.println("Would you like to run again (Y/N)?");
+
+					String input = sc.nextLine();
+					if(input.toUpperCase().equals("Y")){ running=true; break;}
+					if(input.toUpperCase().equals("N")){ running=false; break;}
+					System.out.println("Invalid Mode! Select either 'Y'(Yes), 'N'(No)");
+				}
+				System.out.println();
+			}
+			sc.close();
+		} catch (Exception e) { e.printStackTrace(); }
+
 	}
 
 }
