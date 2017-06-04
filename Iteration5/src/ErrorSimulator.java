@@ -12,8 +12,8 @@ public class ErrorSimulator {
 	private Packet 		  			Packet;
 	private DatagramSocket			receiveSocket, sendSocket, sendReceiveSocket, changeSocket;		
 	private static Scanner 			sc;
-	private InetAddress 			address, clientAddress, serverAddress, LocalAddress;
-	private int 					clientPort, serverPort, userInput, Req, packetNumber, clientReq, pType, totalBlocks, count;
+	private InetAddress 			address, clientAddress, serverAddress;
+	private int 					clientPort, serverPort, userInput, Req, packetNumber, clientReq, pType, totalBlocks, count, targetACK, newACK;
 	private boolean					transferringFile, skipClient, skipServer, first;
 
 	public ErrorSimulator(boolean verbose){
@@ -110,13 +110,16 @@ public class ErrorSimulator {
 					help.sendPacket(p, sendReceiveSocket, serverAddress, serverPort);
 				}else if (!isTransferringFile()){
 					help.sendPacket(Packet, sendReceiveSocket, serverAddress, 69);
-				}else if(isTransferringFile() && userInput >= 9 && userInput <= 11){
+				}else if(isTransferringFile() && userInput >= 10 && userInput <= 12){
+					putError(Packet, userInput, sendReceiveSocket, serverPort, serverAddress);
+				}else if(isTransferringFile() && userInput == 9){
 					putError(Packet, userInput, sendReceiveSocket, serverPort, serverAddress);
 				}else{
 					help.sendPacket(Packet, sendReceiveSocket, serverAddress, serverPort);
 				}
 			}else{
 				skipClient = false;
+				help.print("client skipped");
 			}
 
 
@@ -167,7 +170,9 @@ public class ErrorSimulator {
 					putError(Packet, userInput, sendSocket, clientPort, clientAddress);
 					userInput = -1;
 					help.sendPacket(p, sendSocket, clientAddress, clientPort);
-				}else if(isTransferringFile() && userInput >= 9 && userInput <= 11){
+				}else if(isTransferringFile() && userInput >= 10 && userInput <= 12){
+					putError(Packet, userInput, sendSocket, clientPort, clientAddress);
+				}else if(isTransferringFile() && userInput == 9){
 					putError(Packet, userInput, sendSocket, clientPort, clientAddress);
 				}else{
 					help.sendPacket(Packet, sendSocket, clientAddress, clientPort);
@@ -233,7 +238,7 @@ public class ErrorSimulator {
 			help.print("Packet Received in Bytes: " + msg);
 
 			//forward the packet received
-			help.sendPacket(newPacket, soc, address, port);
+			help.sendPacket(newPacket, soc, addr, port);
 
 			this.userInput = -1;
 
@@ -390,7 +395,7 @@ public class ErrorSimulator {
 			break;
 
 		case 7: // change DATA size to be greater than 512b
-
+			help.print("vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv");
 			help.print("Changing data size to be greater than 512b");
 
 			//change DATA size
@@ -404,8 +409,9 @@ public class ErrorSimulator {
 			help.print("Modified Packet" + help.byteToString(Packet.GetData()) + "\n");
 
 			//send Packet to server
-			help.sendPacket(Packet, soc, address, port);
-
+			help.sendPacket(Packet, soc, addr, port);
+			
+			help.print("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^");
 			this.userInput = -1;
 
 			break;
@@ -443,8 +449,26 @@ public class ErrorSimulator {
 			help.print("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^");
 			
 			break;
+			
+		case 9: // Change ACK block number.
+			if(!(Packet.GetRequest() == 4 && Packet.GetPacketN() == targetACK)){
+				help.sendPacket(newPacket, soc, addr, port);
+				break;
+			}
+			help.print("vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv");
+			help.print("Changing the ACK block number " + targetACK+ "  to " + newACK);	  
+			
+			//create a new ack packet
+			Packet = new Packet(newACK);
+			help.sendPacket(Packet, soc, addr, port);
 
-		case 9: // Delaying a Packet
+			help.print("Mission is a SUCCESS!!!!");
+			help.print("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^");
+			
+			this.userInput = -1;
+			break;
+			
+		case 10: // Delaying a Packet
 
 			help.print("Beginning delaying a packet error simulation.\n");
 
@@ -453,7 +477,7 @@ public class ErrorSimulator {
 				help.print("Wrong request.\n");
 				help.print("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^");
 				help.sendPacket(newPacket, soc, addr, port);
-				userInput = -1;
+				this.userInput = -1;
 				break;
 			}
 
@@ -493,11 +517,11 @@ public class ErrorSimulator {
 
 			help.print("Mission was a success.");
 			help.print("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^");
-			userInput = -1;
+			this.userInput = -1;
 
 			break;
 
-		case 10: // Lose a packet
+		case 11: // Lose a packet
 
 			help.print("Beginning losing a packet error simulation.");
 
@@ -507,7 +531,7 @@ public class ErrorSimulator {
 				help.print("Wrong request.");
 				help.print("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^");
 				help.sendPacket(newPacket, soc, addr, port);
-				userInput = -1;
+				this.userInput = -1;
 				break;
 			}
 
@@ -548,11 +572,11 @@ public class ErrorSimulator {
 
 			help.print("Mission was a success.");
 			help.print("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^");
-			userInput = -1;
+			this.userInput = -1;
 
 			break;
 			
-		case 11: //Duplicating packets
+		case 12: //Duplicating packets
 			
 			help.print("Beginning duplicating a packet error simulation.");
 
@@ -561,7 +585,7 @@ public class ErrorSimulator {
 				help.print("Wrong request.");
 				help.print("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^");
 				help.sendPacket(newPacket, soc, addr, port);
-				userInput = -1;
+				this.userInput = -1;
 				break;
 			}
 
@@ -600,7 +624,7 @@ public class ErrorSimulator {
 			
 			help.print("Mission was a success.");
 			help.print("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^");
-			userInput = -1;
+			this.userInput = -1;
 
 			break;
 		}
@@ -625,9 +649,10 @@ public class ErrorSimulator {
 				help.print("6:   Error Code 4: Change Delimiter after Mode");
 				help.print("7:   Error Code 4: DATA packet size greater than 512b");
 				help.print("8:   Error Code 5: Change Port Number");
-				help.print("9:   Delayed Packets");
-				help.print("10:  Lose A Packet");
-				help.print("11:  Duplicate A Packet");
+				help.print("9:   Change ACK block number");
+				help.print("10:  Delayed Packets");
+				help.print("11:  Lose A Packet");
+				help.print("12:  Duplicate A Packet");
 
 				//Get the user input and convert to integer
 				userInput = Integer.parseInt(sc.nextLine());
@@ -636,7 +661,17 @@ public class ErrorSimulator {
 
 				if(userInput >= 0 && userInput <= 8){ 
 					break;
-				}else if(userInput >= 9 && userInput <= 11){
+				}else if(userInput == 9){
+					help.print("Enter the ACK block number you wish to be changed");
+					targetACK = sc.nextInt(); 
+					if(targetACK > -1){
+						help.print("You selected ACK block number " + targetACK);
+						help.print("Enter new ACK block number");
+						newACK = sc.nextInt();
+						help.print("You chose " + newACK);
+						break;
+					}
+				}else if(userInput >= 10 && userInput <= 12){
 
 					help.print("Select the request type: \n\t\t1 for RRQ \n\t\t2 for WRQ");
 					Req = Integer.parseInt(sc.nextLine());
